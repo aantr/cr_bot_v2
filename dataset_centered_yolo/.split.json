@@ -1,0 +1,501 @@
+{
+  "format_version": 2,
+  "source": "C:\\Users\\aantr\\cr_bot\\v2\\dataset_centered",
+  "source_fingerprint": "50cfbcb586bac25bdb63cff51ae8165a72dd9c7141fe890df81eb65ce06aad72",
+  "seed": 42,
+  "val_ratio": 0.2,
+  "classes": {
+    "archer": {
+      "train": 80,
+      "val": 20
+    },
+    "archer-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "archer-queen": {
+      "train": 80,
+      "val": 20
+    },
+    "baby-dragon": {
+      "train": 80,
+      "val": 20
+    },
+    "balloon": {
+      "train": 80,
+      "val": 20
+    },
+    "bandit": {
+      "train": 210,
+      "val": 52
+    },
+    "barbarian": {
+      "train": 155,
+      "val": 39
+    },
+    "barbarian-barrel": {
+      "train": 80,
+      "val": 20
+    },
+    "barbarian-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "barbarian-hut": {
+      "train": 80,
+      "val": 20
+    },
+    "bat": {
+      "train": 80,
+      "val": 20
+    },
+    "bat-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "battle-healer": {
+      "train": 80,
+      "val": 20
+    },
+    "battle-ram": {
+      "train": 144,
+      "val": 36
+    },
+    "battle-ram-evolution": {
+      "train": 215,
+      "val": 54
+    },
+    "bomb-tower": {
+      "train": 80,
+      "val": 20
+    },
+    "bomber": {
+      "train": 80,
+      "val": 20
+    },
+    "bomber-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "bowler": {
+      "train": 80,
+      "val": 20
+    },
+    "cannon": {
+      "train": 198,
+      "val": 50
+    },
+    "cannon-cart": {
+      "train": 80,
+      "val": 20
+    },
+    "cannon-evolution": {
+      "train": 64,
+      "val": 16
+    },
+    "dark-prince": {
+      "train": 80,
+      "val": 20
+    },
+    "dart-goblin": {
+      "train": 80,
+      "val": 20
+    },
+    "electro-dragon": {
+      "train": 80,
+      "val": 20
+    },
+    "electro-giant": {
+      "train": 80,
+      "val": 20
+    },
+    "electro-spirit": {
+      "train": 98,
+      "val": 25
+    },
+    "electro-wizard": {
+      "train": 206,
+      "val": 51
+    },
+    "elite-barbarian": {
+      "train": 80,
+      "val": 20
+    },
+    "elixir-collector": {
+      "train": 80,
+      "val": 20
+    },
+    "elixir-golem-big": {
+      "train": 144,
+      "val": 36
+    },
+    "elixir-golem-mid": {
+      "train": 158,
+      "val": 39
+    },
+    "elixir-golem-small": {
+      "train": 80,
+      "val": 20
+    },
+    "executioner": {
+      "train": 80,
+      "val": 20
+    },
+    "fire-spirit": {
+      "train": 80,
+      "val": 20
+    },
+    "fireball": {
+      "train": 80,
+      "val": 20
+    },
+    "firecracker": {
+      "train": 196,
+      "val": 49
+    },
+    "firecracker-evolution": {
+      "train": 114,
+      "val": 29
+    },
+    "fisherman": {
+      "train": 80,
+      "val": 20
+    },
+    "flying-machine": {
+      "train": 131,
+      "val": 33
+    },
+    "furnace": {
+      "train": 80,
+      "val": 20
+    },
+    "giant": {
+      "train": 80,
+      "val": 20
+    },
+    "giant-skeleton": {
+      "train": 80,
+      "val": 20
+    },
+    "goblin": {
+      "train": 87,
+      "val": 22
+    },
+    "goblin-brawler": {
+      "train": 114,
+      "val": 29
+    },
+    "goblin-cage": {
+      "train": 115,
+      "val": 29
+    },
+    "goblin-drill": {
+      "train": 80,
+      "val": 20
+    },
+    "goblin-giant": {
+      "train": 80,
+      "val": 20
+    },
+    "goblin-hero": {
+      "train": 244,
+      "val": 59
+    },
+    "goblin-hut": {
+      "train": 80,
+      "val": 20
+    },
+    "golem": {
+      "train": 216,
+      "val": 54
+    },
+    "golemite": {
+      "train": 122,
+      "val": 30
+    },
+    "graveyard": {
+      "train": 80,
+      "val": 20
+    },
+    "guard": {
+      "train": 80,
+      "val": 20
+    },
+    "heal-spirit": {
+      "train": 80,
+      "val": 20
+    },
+    "hog": {
+      "train": 80,
+      "val": 20
+    },
+    "hog-rider": {
+      "train": 250,
+      "val": 63
+    },
+    "hunter": {
+      "train": 80,
+      "val": 20
+    },
+    "ice-golem": {
+      "train": 192,
+      "val": 48
+    },
+    "ice-spirit": {
+      "train": 103,
+      "val": 26
+    },
+    "ice-spirit-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "ice-wizard": {
+      "train": 80,
+      "val": 20
+    },
+    "inferno-dragon": {
+      "train": 208,
+      "val": 52
+    },
+    "inferno-tower": {
+      "train": 80,
+      "val": 20
+    },
+    "knight": {
+      "train": 80,
+      "val": 20
+    },
+    "knight-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "lava-hound": {
+      "train": 80,
+      "val": 20
+    },
+    "lava-pup": {
+      "train": 80,
+      "val": 20
+    },
+    "lightning": {
+      "train": 80,
+      "val": 20
+    },
+    "little-prince": {
+      "train": 80,
+      "val": 20
+    },
+    "lumberjack": {
+      "train": 80,
+      "val": 20
+    },
+    "magic-archer": {
+      "train": 80,
+      "val": 20
+    },
+    "mega-knight": {
+      "train": 80,
+      "val": 20
+    },
+    "mega-minion": {
+      "train": 80,
+      "val": 20
+    },
+    "mighty-miner": {
+      "train": 167,
+      "val": 42
+    },
+    "miner": {
+      "train": 80,
+      "val": 20
+    },
+    "mini-pekka": {
+      "train": 80,
+      "val": 20
+    },
+    "minion": {
+      "train": 204,
+      "val": 51
+    },
+    "monk": {
+      "train": 80,
+      "val": 20
+    },
+    "mortar": {
+      "train": 80,
+      "val": 20
+    },
+    "mortar-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "mother-witch": {
+      "train": 80,
+      "val": 20
+    },
+    "musketeer": {
+      "train": 217,
+      "val": 54
+    },
+    "musketeer-hero": {
+      "train": 80,
+      "val": 35
+    },
+    "night-witch": {
+      "train": 131,
+      "val": 33
+    },
+    "pekka": {
+      "train": 218,
+      "val": 55
+    },
+    "phoenix-big": {
+      "train": 80,
+      "val": 20
+    },
+    "phoenix-egg": {
+      "train": 80,
+      "val": 20
+    },
+    "phoenix-small": {
+      "train": 80,
+      "val": 20
+    },
+    "prince": {
+      "train": 80,
+      "val": 20
+    },
+    "princess": {
+      "train": 80,
+      "val": 20
+    },
+    "princess-evolution": {
+      "train": 64,
+      "val": 16
+    },
+    "ram-rider": {
+      "train": 80,
+      "val": 20
+    },
+    "rascal-boy": {
+      "train": 80,
+      "val": 20
+    },
+    "rascal-girl": {
+      "train": 80,
+      "val": 20
+    },
+    "royal-ghost": {
+      "train": 380,
+      "val": 95
+    },
+    "royal-giant": {
+      "train": 80,
+      "val": 20
+    },
+    "royal-giant-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "royal-guardian": {
+      "train": 80,
+      "val": 20
+    },
+    "royal-hog": {
+      "train": 165,
+      "val": 41
+    },
+    "royal-recruit": {
+      "train": 149,
+      "val": 37
+    },
+    "royal-recruit-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "skeleton": {
+      "train": 258,
+      "val": 65
+    },
+    "skeleton-barrel": {
+      "train": 80,
+      "val": 20
+    },
+    "skeleton-dragon": {
+      "train": 80,
+      "val": 20
+    },
+    "skeleton-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "skeleton-king": {
+      "train": 283,
+      "val": 71
+    },
+    "sparky": {
+      "train": 80,
+      "val": 20
+    },
+    "spear-goblin": {
+      "train": 80,
+      "val": 20
+    },
+    "tesla": {
+      "train": 208,
+      "val": 52
+    },
+    "tesla-evolution": {
+      "train": 130,
+      "val": 33
+    },
+    "the-log": {
+      "train": 80,
+      "val": 20
+    },
+    "tombstone": {
+      "train": 80,
+      "val": 20
+    },
+    "valkyrie": {
+      "train": 80,
+      "val": 20
+    },
+    "valkyrie-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "wall-breaker": {
+      "train": 80,
+      "val": 20
+    },
+    "wall-breaker-evolution": {
+      "train": 80,
+      "val": 20
+    },
+    "witch": {
+      "train": 80,
+      "val": 20
+    },
+    "wizard": {
+      "train": 80,
+      "val": 20
+    },
+    "x-bow": {
+      "train": 80,
+      "val": 20
+    },
+    "zap": {
+      "train": 80,
+      "val": 20
+    },
+    "zappy": {
+      "train": 211,
+      "val": 53
+    }
+  },
+  "image_level_fallback_classes": [
+    "cannon-evolution",
+    "princess-evolution"
+  ]
+}

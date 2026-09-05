@@ -1,0 +1,57 @@
+{
+  "format_version": 2,
+  "source": "C:\\Users\\aantr\\cr_bot\\v2\\tracking_dataset",
+  "source_fingerprint": "7ac0420f45fdc4b113068c2113888b49f7add7acf7f4d01f894a382e25338f4b",
+  "seed": 42,
+  "val_ratio": 0.2,
+  "classes": {
+    "bandit": {
+      "train": 52,
+      "val": 15
+    },
+    "battle-ram-ev1": {
+      "train": 136,
+      "val": 33
+    },
+    "cannon": {
+      "train": 73,
+      "val": 5
+    },
+    "cannon-evolution": {
+      "train": 64,
+      "val": 16
+    },
+    "goblins-hero": {
+      "train": 244,
+      "val": 59
+    },
+    "hog-rider": {
+      "train": 163,
+      "val": 50
+    },
+    "ice-golem": {
+      "train": 48,
+      "val": 12
+    },
+    "minions": {
+      "train": 60,
+      "val": 15
+    },
+    "musketeer": {
+      "train": 160,
+      "val": 11
+    },
+    "pekka": {
+      "train": 138,
+      "val": 35
+    },
+    "royal-ghost": {
+      "train": 297,
+      "val": 78
+    }
+  },
+  "image_level_fallback_classes": [
+    "cannon-evolution",
+    "ice-golem"
+  ]
+}

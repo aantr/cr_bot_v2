@@ -18,6 +18,7 @@ DEFAULT_DATASET = V2_DIR / "dataset_centered"
 DEFAULT_SPLIT_DIR = V2_DIR / "dataset_centered_yolo"
 DEFAULT_PROJECT = V2_DIR / "runs_game"
 DEFAULT_MODEL = V2_DIR / "yolo26s-cls.pt"
+DEFAULT_RUN_NAME = "yolo26s_cls_224"
 
 IMAGE_SUFFIXES = {
     ".bmp",
@@ -378,7 +379,7 @@ def parse_args() -> argparse.Namespace:
         default=True,
     )
     parser.add_argument("--project", type=Path, default=DEFAULT_PROJECT)
-    parser.add_argument("--name", default="yolo26s_cls_224")
+    parser.add_argument("--name", default=DEFAULT_RUN_NAME)
     parser.add_argument("--save-period", type=int, default=-1)
     parser.add_argument("--exist-ok", action="store_true")
     parser.add_argument(

@@ -1,0 +1,66 @@
+{
+  "format_version": 2,
+  "source": "C:\\Users\\aantr\\cr_bot\\v2\\dataset_cards",
+  "source_fingerprint": "5debf998ee15c6608d32f6e4064a98f99cce0e04ec7680a5b3e56090152fa19e",
+  "seed": 42,
+  "val_ratio": 0.2,
+  "classes": {
+    "cannon": {
+      "train": 4,
+      "val": 1
+    },
+    "cannon-ev1": {
+      "train": 4,
+      "val": 1
+    },
+    "empty": {
+      "train": 4,
+      "val": 1
+    },
+    "fireball": {
+      "train": 4,
+      "val": 1
+    },
+    "hog-rider": {
+      "train": 4,
+      "val": 1
+    },
+    "ice-golem": {
+      "train": 4,
+      "val": 1
+    },
+    "ice-golem-hero": {
+      "train": 4,
+      "val": 1
+    },
+    "ice-spirit": {
+      "train": 4,
+      "val": 1
+    },
+    "ice-spirit-ev1": {
+      "train": 4,
+      "val": 1
+    },
+    "musketeer": {
+      "train": 4,
+      "val": 1
+    },
+    "musketeer-ev1": {
+      "train": 4,
+      "val": 1
+    },
+    "skeletons": {
+      "train": 4,
+      "val": 1
+    },
+    "skeletons-ev1": {
+      "train": 4,
+      "val": 1
+    },
+    "the-log": {
+      "train": 4,
+      "val": 1
+    }
+  },
+  "image_level_fallback_classes": []
+}

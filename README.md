@@ -62,3 +62,24 @@ python train_classification\train_classification.py
 
 The generated split remains in `dataset_centered_yolo`, and classification runs
 remain in `runs_game`.
+
+## Fast video prediction
+
+```powershell
+python predict_video_fast.py `
+  --input screenshots\input_omydays.mp4 `
+  --output screenshots\output_tracked_fast.mp4
+```
+
+The fast variant uses both bars and elixir TensorRT detectors. Unit
+classification is batched and cached by `track_id`; elixir detections are never
+sent to the classifier. Use `--classification-refresh 0` to classify each track
+only once, or `--no-display` for headless processing.
+
+For Kalman-smoothed bar and elixir bounding boxes, run:
+
+```powershell
+python predict_video_calman.py
+```
+
+Its output is written to `screenshots/output_tracked_calman.mp4`.

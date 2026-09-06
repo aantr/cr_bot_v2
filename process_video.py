@@ -22,7 +22,7 @@ OUTPUT_VIDEO = "screenshots\\output_detected.mp4"
 
 IMGSZ = 1280
 
-CONF = 0.50
+CONF = 0.20
 IOU = 0.50
 
 MAX_DET = 500

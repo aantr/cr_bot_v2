@@ -23,6 +23,10 @@ CLASSIFICATION_MODEL_PATH = (
     V2_DIR / "runs_game/yolo26s_cls_224-3/weights/best.pt"
 )
 
+CLASSIFICATION_CARDS_MODEL_PATH = (
+    V2_DIR / "runs_cards/yolo26s_cls_cards_224/weights/best.pt"
+)
+
 BATTLEFIELDS = {
     (832, 1811): (0, 100, 832, 1450),
     (1206, 2622): (50, 360, 1180, 1990),
@@ -32,10 +36,10 @@ BATTLEFIELDS = {
 
 CARDS = {
     (1206, 2622): (260, 2154, 1168, 2466),
+    (882, 1920): (190, 1578, 854, 1805),
 }
 
 ELIXIR_BAR = {
     # todo
     (1206, 2622): (260, 2154, 1168, 2466),
 }
-

@@ -11,6 +11,7 @@ from model_paths import (
     BATTLEFIELDS,
     CLASSIFICATION_MODEL_PATH,
     DETECTION_ENGINE_PATH,
+    ELIXIR_DETECTION_ENGINE_PATH,
 )
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -24,6 +25,7 @@ from predict_classification import classify_crop
 
 # YOLO inference settings are kept in sync with process_video.py.
 MODEL_PATH = DETECTION_ENGINE_PATH
+ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 INPUT_VIDEO = SCRIPT_DIR / "screenshots/input_omydays.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked.mp4"
 
@@ -35,7 +37,16 @@ DEVICE = 0
 QUANTIZE = 16  # FP16; use None for FP32
 
 
+if not Path(MODEL_PATH).is_file():
+    raise FileNotFoundError(f"Bars TensorRT engine not found: {MODEL_PATH}")
+if not Path(ELIXIR_MODEL_PATH).is_file():
+    raise FileNotFoundError(
+        f"Elixir TensorRT engine not found: {ELIXIR_MODEL_PATH}. "
+        "Run train_elixir\\export_tensor_rt.py after training finishes."
+    )
+
 model = YOLO(str(MODEL_PATH))
+elixir_model = YOLO(str(ELIXIR_MODEL_PATH))
 cap = cv2.VideoCapture(str(INPUT_VIDEO))
 if not cap.isOpened():
     raise RuntimeError(f"Cannot open video: {INPUT_VIDEO}")
@@ -165,16 +176,34 @@ while cap.isOpened():
         verbose=False,
     )
 
+    # Elixir detection is intentionally separate from bar tracking and unit
+    # classification. Its boxes are only recorded and drawn below.
+    elixir_result = elixir_model.predict(
+        source=battlefield,
+        imgsz=IMGSZ,
+        conf=CONF,
+        iou=IOU,
+        max_det=MAX_DET,
+        device=DEVICE,
+        quantize=QUANTIZE,
+        verbose=False,
+    )[0]
+
     # Собираем данные о кадре
     frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
+    bar_detection_count = 0
+    elixir_detection_count = (
+        0 if elixir_result.boxes is None else len(elixir_result.boxes)
+    )
 
-    if results[0].boxes.id is not None:
+    if results[0].boxes is not None and results[0].boxes.id is not None:
         boxes = results[0].boxes.xyxy.cpu().numpy()
         track_ids = results[0].boxes.id.int().cpu().tolist()
         confs = results[0].boxes.conf.cpu().numpy()
         class_ids = results[0].boxes.cls.int().cpu().tolist()
 
-        frame_data["num_objects"] = len(track_ids)
+        bar_detection_count = len(track_ids)
+        frame_data["num_objects"] = bar_detection_count
         cls_text = ""
 
         for i, (box, track_id, conf, class_id) in enumerate(
@@ -302,6 +331,25 @@ while cap.isOpened():
                 3,
             )
 
+    # Elixir detections never pass through classify_crop().
+    if elixir_result.boxes is not None:
+        for box in elixir_result.boxes:
+            class_id = int(box.cls[0])
+            confidence = float(box.conf[0])
+            x1, y1, x2, y2 = map(float, box.xyxy[0].tolist())
+            frame_data["objects"].append(
+                {
+                    "track_id": None,
+                    "class": elixir_result.names[class_id],
+                    "confidence": confidence,
+                    "bbox": [x1, y1, x2, y2],
+                    "center": [(x1 + x2) / 2, (y1 + y2) / 2],
+                }
+            )
+        battlefield = elixir_result.plot(img=battlefield)
+
+    frame_data["num_objects"] += elixir_detection_count
+
     # Put the tracked and annotated battlefield back into the original frame.
     output_frame = frame.copy()
     output_frame[crop_y1:crop_y2, crop_x1:crop_x2] = battlefield
@@ -331,6 +379,15 @@ while cap.isOpened():
         (10, 30),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
+        (255, 255, 255),
+        2,
+    )
+    cv2.putText(
+        output_frame,
+        f"Bars: {bar_detection_count} | Elixir: {elixir_detection_count}",
+        (10, 65),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
         (255, 255, 255),
         2,
     )

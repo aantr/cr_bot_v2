@@ -4,13 +4,18 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-from model_paths import BATTLEFIELDS, DETECTION_ENGINE_PATH
+from model_paths import (
+    BATTLEFIELDS,
+    DETECTION_ENGINE_PATH,
+    ELIXIR_DETECTION_ENGINE_PATH,
+)
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 MODEL_PATH = DETECTION_ENGINE_PATH
+ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 
 INPUT_VIDEO = "screenshots\\last_20_percent.mp4"
 OUTPUT_VIDEO = "screenshots\\output_detected.mp4"
@@ -61,13 +66,26 @@ QUANTIZE = 16  # FP16; use None for FP32
 
 print()
 print("=" * 60)
-print("Loading YOLO model")
+print("Loading YOLO models")
 print("=" * 60)
 
-print(f"Model: {MODEL_PATH}")
+print(f"Bars model:   {MODEL_PATH}")
+print(f"Elixir model: {ELIXIR_MODEL_PATH}")
+
+if not Path(MODEL_PATH).is_file():
+    raise FileNotFoundError(f"Bars TensorRT engine not found: {MODEL_PATH}")
+if not Path(ELIXIR_MODEL_PATH).is_file():
+    raise FileNotFoundError(
+        f"Elixir TensorRT engine not found: {ELIXIR_MODEL_PATH}. "
+        "Run train_elixir\\export_tensor_rt.py after training finishes."
+    )
 
 model = YOLO(
     MODEL_PATH
+)
+
+elixir_model = YOLO(
+    ELIXIR_MODEL_PATH
 )
 
 
@@ -374,6 +392,26 @@ while True:
     )
 
 
+    elixir_results = elixir_model.predict(
+
+        source=battlefield,
+
+        imgsz=IMGSZ,
+
+        conf=CONF,
+
+        iou=IOU,
+
+        max_det=MAX_DET,
+
+        device=DEVICE,
+
+        quantize=QUANTIZE,
+
+        verbose=False,
+    )
+
+
     inference_end = (
         time.perf_counter()
     )
@@ -393,12 +431,16 @@ while True:
 
     result = results[0]
 
+    elixir_result = elixir_results[0]
+
 
     # =====================================================
     # DETECTIONS
     # =====================================================
 
     detection_count = 0
+
+    elixir_detection_count = 0
 
 
     if result.boxes is not None:
@@ -513,12 +555,23 @@ while True:
             # =================================================
 
 
+    if elixir_result.boxes is not None:
+
+        elixir_detection_count = len(
+            elixir_result.boxes
+        )
+
+
     # =====================================================
     # DRAW DETECTIONS
     # =====================================================
 
     detected_battlefield = (
         result.plot()
+    )
+
+    detected_battlefield = elixir_result.plot(
+        img=detected_battlefield,
     )
 
 
@@ -639,8 +692,8 @@ while True:
         output_frame,
 
         (
-            f"Objects: "
-            f"{detection_count}"
+            f"Bars: {detection_count} | "
+            f"Elixir: {elixir_detection_count}"
         ),
 
         (
@@ -752,7 +805,8 @@ while True:
             "\r"
             f"{progress:6.2f}% | "
             f"{frame_index}/{total_frames} | "
-            f"detections={detection_count:3d} | "
+            f"bars={detection_count:3d} | "
+            f"elixir={elixir_detection_count:3d} | "
             f"inference={inference_fps:6.1f} FPS | "
             f"avg={avg_fps:6.1f} FPS | "
             f"ETA={eta:6.1f}s",

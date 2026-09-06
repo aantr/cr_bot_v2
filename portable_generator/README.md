@@ -40,8 +40,10 @@ python -m portable_generator.generator `
 Другие файлы и вложенные каталоги не затрагиваются.
 
 Рядом с каждым `gen_N.jpg` будет создана стандартная YOLO-аннотация `gen_N.txt`.
-Включённый `classes.yaml` сохраняет текущий набор распознаваемых классов. Для
-другого набора передайте `--classes-yaml path\to\data.yaml`.
+Включённый `classes.yaml` задаёт три выходных класса: `0: bar`,
+`1: bar-level`, `2: elixir`. Режим `--generation-filter bars-elixir`
+записывает в итоговые label-файлы только эти классы. Для другого набора
+передайте `--classes-yaml path\to\data.yaml`.
 
 ## Использование из кода
 
@@ -52,7 +54,7 @@ generator = Generator(
     dataset_root=r"C:\path\to\Clash-Royale-Detection-Dataset",
     seed=42,
     map_update={"mode": "dynamic", "size": 5},
-    generation_filter="bars",  # "bars", "blue" или "all"
+    generation_filter="bars-elixir",
 )
 generator.add_tower()
 generator.add_unit(n=12)

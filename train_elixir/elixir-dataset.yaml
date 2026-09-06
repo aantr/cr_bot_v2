@@ -1,0 +1,5 @@
+train: ../generation_elixir/train.txt
+val: ../generation_elixir/val.txt
+
+names:
+  0: elixir

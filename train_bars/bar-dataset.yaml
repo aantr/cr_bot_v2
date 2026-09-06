@@ -1,0 +1,6 @@
+train: ../generation/train.txt
+val: ../generation/val.txt
+
+names:
+  0: bar
+  1: bar-level

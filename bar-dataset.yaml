@@ -1,8 +1,0 @@
-path: generation
-
-train: train.txt
-val: val.txt
-
-names:
-  0: bar
-  1: bar-level

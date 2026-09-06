@@ -11,6 +11,14 @@ DETECTION_ENGINE_PATH = (
     V2_DIR / "runs/detect/runs_game/yolo26s_p2_1280-2/weights/best.engine"
 )
 
+ELIXIR_DETECTION_WEIGHTS_PATH = (
+    V2_DIR / "runs/detect/runs_elixir/yolo26s_p2_elixir_1280/weights/best.pt"
+)
+
+ELIXIR_DETECTION_ENGINE_PATH = (
+    V2_DIR / "runs/detect/runs_elixir/yolo26s_p2_elixir_1280/weights/best.engine"
+)
+
 CLASSIFICATION_MODEL_PATH = (
     V2_DIR / "runs_game/yolo26s_cls_224-3/weights/best.pt"
 )
@@ -30,5 +38,4 @@ ELIXIR_BAR = {
     # todo
     (1206, 2622): (260, 2154, 1168, 2466),
 }
-
 

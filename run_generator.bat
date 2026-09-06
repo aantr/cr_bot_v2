@@ -1,1 +1,0 @@
-python portable_generator\generator.py --dataset-root dataset --count 100 --units-min 1 --units-max 500

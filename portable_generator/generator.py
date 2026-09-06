@@ -90,6 +90,8 @@ else:  # Allows: python generator.py
     )
 
 
+BAR_ELIXIR_CLASSES = ("bar", "bar-level", "elixir")
+
 
 # background_size = (568, 896), cell_size = (30.9, 25)
 cell_size = np.array(
@@ -438,7 +440,9 @@ class Generator:
           noise_unit_ratio: The ratio of inavailable unit (noise unit) in whole units.
           dataset_root: Directory containing ``images/segment``.
           classes_yaml: YOLO YAML with a ``names`` section. Defaults to ``classes.yaml`` beside this file.
-          generation_filter: ``bars`` or ``blue`` preserves the original filtering modes; ``all`` keeps every recognized box.
+          generation_filter: ``bars-elixir`` writes only ``bar``, ``bar-level``
+            and ``elixir`` boxes; ``bars`` and ``blue`` preserve the original
+            filtering modes; ``all`` keeps every recognized box.
         Variables:
           map_cfg (dict):
             'ground': The 0/1 ground unit map in `katacr/build_dataset/generation_config.py`.
@@ -452,12 +456,22 @@ class Generator:
         self.augment = augment
         self.dynamic_unit = dynamic_unit
         self.noise_unit_ratio = noise_unit_ratio
-        if generation_filter not in {"all", "bars", "blue"}:
-            raise ValueError("generation_filter must be 'all', 'bars', or 'blue'")
+        if generation_filter not in {"all", "bars", "blue", "bars-elixir"}:
+            raise ValueError("generation_filter must be 'all', 'bars', 'blue', or 'bars-elixir'")
         self.generation_filter = generation_filter
 
         if classes_yaml is not None:
             configure_class_names(classes_yaml)
+
+        if self.generation_filter == "bars-elixir":
+            expected = dict(enumerate(BAR_ELIXIR_CLASSES))
+            configured = {index: idx2unit.get(index) for index in expected}
+            if configured != expected:
+                raise ValueError(
+                    "generation_filter='bars-elixir' requires class IDs "
+                    "0=bar, 1=bar-level, 2=elixir; "
+                    f"configured IDs are {configured}"
+                )
 
         if dataset_root is None:
             dataset_root = Path(__file__).with_name("dataset")
@@ -487,7 +501,9 @@ class Generator:
         if self.avail_names is None:
             self.avail_names = unit_list
 
-        if self.recognize_names is None:
+        if self.generation_filter == "bars-elixir":
+            self.recognize_names = BAR_ELIXIR_CLASSES
+        elif self.recognize_names is None:
             self.recognize_names = tuple(idx2unit.values())
 
         for p in sorted(self.path_segment.glob("*")):
@@ -703,6 +719,8 @@ class Generator:
                 # print(u.cls, u.xyxy, u.cls_name, u.states)
                 write_this_box = False
                 pass
+            if self.generation_filter == "bars-elixir":
+                write_this_box = u.cls_name in BAR_ELIXIR_CLASSES
             # print(u.cls_name, u.states, u.cls)
 
             u.draw(img)
@@ -1287,7 +1305,7 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int)
     parser.add_argument("--classes-yaml", type=Path)
-    parser.add_argument("--generation-filter", choices=["all", "bars", "blue"], default="bars")
+    parser.add_argument("--generation-filter", choices=["all", "bars", "blue", "bars-elixir"], default="bars-elixir")
     args = parser.parse_args()
 
     if args.units_min < 0:

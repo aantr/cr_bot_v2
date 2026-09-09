@@ -1,7 +1,7 @@
 {
   "format_version": 2,
   "source": "C:\\Users\\aantr\\cr_bot\\v2\\dataset_cards",
-  "source_fingerprint": "5debf998ee15c6608d32f6e4064a98f99cce0e04ec7680a5b3e56090152fa19e",
+  "source_fingerprint": "b25a2e9d3fbee57c9c63c48730e6f52e231e7b70b147851e223be9834006a967",
   "seed": 42,
   "val_ratio": 0.2,
   "classes": {
@@ -46,6 +46,10 @@
       "val": 1
     },
     "musketeer-ev1": {
+      "train": 4,
+      "val": 1
+    },
+    "musketeer-hero": {
       "train": 4,
       "val": 1
     },

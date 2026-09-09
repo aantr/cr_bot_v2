@@ -24,7 +24,7 @@ CLASSIFICATION_MODEL_PATH = (
 )
 
 CLASSIFICATION_CARDS_MODEL_PATH = (
-    V2_DIR / "runs_cards/yolo26s_cls_cards_224/weights/best.pt"
+    V2_DIR / "runs_cards/yolo26s_cls_cards_224-2/weights/best.pt"
 )
 
 BATTLEFIELDS = {

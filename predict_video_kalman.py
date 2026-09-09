@@ -1,5 +1,8 @@
+import logging
+import math
 import sys
-from collections import defaultdict
+from collections import defaultdict, deque
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
@@ -30,15 +33,24 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots/input_omydays.mp4"
+INPUT_VIDEO = SCRIPT_DIR / "screenshots/IMG_1357.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_calman.mp4"
 
 IMGSZ = 1280
-CONF = 0.20
+CONF = 0.30
 IOU = 0.50
 MAX_DET = 500
 DEVICE = 0
 QUANTIZE = 16  # FP16; use None for FP32
+
+# Debug window with the cropped and annotated battlefield.
+show_battlefield = True
+BATTLEFIELD_DEBUG_WINDOW = "Battlefield debug"
+BATTLEFIELD_DEBUG_WIDTH = 500
+
+# Debug window with the four card slots and classification results.
+show_cards = True
+CARDS_DEBUG_WINDOW = "Cards debug"
 
 
 if not Path(MODEL_PATH).is_file():
@@ -61,6 +73,8 @@ if not cap.isOpened():
 fps = cap.get(cv2.CAP_PROP_FPS)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+if fps <= 0:
+    raise ValueError(f"Invalid video FPS: {fps}")
 
 video_size = (width, height)
 if video_size not in BATTLEFIELDS:
@@ -141,6 +155,19 @@ SIZE_RESCTRICTIONS = (10, 10), (50, 60)
 KALMAN_MAX_MISSED_FRAMES = 60
 CARD_COUNT = 4
 CARD_IMGSZ = 224
+EMPTY_CARD_CLASS = "empty"
+CARD_HISTORY_MS = 2000
+CARD_EMPTY_LEAD_MS = 300  # было 150
+CARD_PREVIOUS_LOOKBACK_MS = 0  # было 800
+CARD_PREVIOUS_SAMPLE_MS = 500  # было 300
+CARD_EMPTY_CONFIRM_MS = 200
+CARD_MIN_PREVIOUS_FRAMES = 2  # было 3
+ELIXIR_EVENT_DWELL_MS = 300
+ELIXIR_EVENT_MAX_GAP_MS = 200
+ELIXIR_EVENT_COOLDOWN_MS = 800
+ELIXIR_EVENT_REGION_RADIUS_CELLS = 1.5
+ELIXIR_EVENT_MIN_DETECTIONS = 3
+EVENT_LOG_PATH = SCRIPT_DIR / "battle_events.log"
 FIELD_ROWS = len(FIELD)
 FIELD_COLUMNS = len(FIELD[0]) if FIELD else 0
 FIELD_CELL_SIZE = 25
@@ -187,7 +214,7 @@ def draw_objects_on_field(
     objects: list[tuple[str, int | None, float, float]],
     battlefield_shape: tuple[int, ...],
 ) -> np.ndarray:
-    """Highlight free field cells containing tracked object centers."""
+    """Highlight field cells containing tracked unit centers."""
     canvas = background.copy()
     battlefield_height, battlefield_width = battlefield_shape[:2]
     if battlefield_width <= 0 or battlefield_height <= 0:
@@ -207,9 +234,6 @@ def draw_objects_on_field(
             and 0 <= row_index < FIELD_ROWS
         ):
             continue
-        if FIELD[row_index][column_index] == "#":
-            continue
-
         color = track_color(object_type, track_id)
         cell_x1 = column_index * FIELD_CELL_SIZE
         cell_y1 = row_index * FIELD_CELL_SIZE
@@ -320,6 +344,285 @@ def draw_card_predictions(
             2,
             cv2.LINE_AA,
         )
+
+
+@dataclass(frozen=True)
+class CardObservation:
+    frame_index: int
+    class_name: str
+    confidence: float
+
+
+@dataclass
+class ElixirEventCandidate:
+    first_frame: int
+    last_frame: int
+    positions: list[tuple[float, float]]
+    emitted: bool = False
+
+    @property
+    def mean_position(self) -> tuple[float, float]:
+        count = len(self.positions)
+        return (
+            sum(position[0] for position in self.positions) / count,
+            sum(position[1] for position in self.positions) / count,
+        )
+
+
+class ElixirEventTracker:
+    """Detect a persistent elixir drop while tolerating short missed detections."""
+
+    def __init__(
+        self,
+        video_fps: float,
+        battlefield_width: int,
+        battlefield_height: int,
+    ) -> None:
+        self.fps = video_fps
+        self.battlefield_width = battlefield_width
+        self.battlefield_height = battlefield_height
+        self.dwell_frames = max(
+            1,
+            math.ceil(video_fps * ELIXIR_EVENT_DWELL_MS / 1000),
+        )
+        self.max_gap_frames = max(
+            1,
+            math.ceil(video_fps * ELIXIR_EVENT_MAX_GAP_MS / 1000),
+        )
+        self.cooldown_frames = max(
+            1,
+            math.ceil(video_fps * ELIXIR_EVENT_COOLDOWN_MS / 1000),
+        )
+        self.candidates: list[ElixirEventCandidate] = []
+        self.recent_events: list[tuple[int, tuple[float, float]]] = []
+
+    def _grid_distance(
+        self,
+        first: tuple[float, float],
+        second: tuple[float, float],
+    ) -> float:
+        dx = (first[0] - second[0]) * FIELD_COLUMNS / self.battlefield_width
+        dy = (first[1] - second[1]) * FIELD_ROWS / self.battlefield_height
+        return math.hypot(dx, dy)
+
+    def _inside_region(
+        self,
+        first: tuple[float, float],
+        second: tuple[float, float],
+    ) -> bool:
+        return self._grid_distance(first, second) <= ELIXIR_EVENT_REGION_RADIUS_CELLS
+
+    def update(
+        self,
+        centers: list[tuple[float, float]],
+        frame_index: int,
+    ) -> list[ElixirEventCandidate]:
+        self.candidates = [
+            candidate
+            for candidate in self.candidates
+            if frame_index - candidate.last_frame <= self.max_gap_frames
+        ]
+        self.recent_events = [
+            event
+            for event in self.recent_events
+            if frame_index - event[0] <= self.cooldown_frames
+        ]
+
+        matched_candidates: set[int] = set()
+        for center in centers:
+            nearest_index = None
+            nearest_distance = float("inf")
+            for candidate_index, candidate in enumerate(self.candidates):
+                if candidate_index in matched_candidates:
+                    continue
+                distance = self._grid_distance(center, candidate.mean_position)
+                if (
+                    distance <= ELIXIR_EVENT_REGION_RADIUS_CELLS
+                    and distance < nearest_distance
+                ):
+                    nearest_index = candidate_index
+                    nearest_distance = distance
+
+            if nearest_index is not None:
+                candidate = self.candidates[nearest_index]
+                candidate.positions.append(center)
+                candidate.last_frame = frame_index
+                matched_candidates.add(nearest_index)
+                continue
+
+            if any(
+                self._inside_region(center, event_position)
+                for _, event_position in self.recent_events
+            ):
+                continue
+
+            self.candidates.append(
+                ElixirEventCandidate(
+                    first_frame=frame_index,
+                    last_frame=frame_index,
+                    positions=[center],
+                )
+            )
+            matched_candidates.add(len(self.candidates) - 1)
+
+        confirmed: list[ElixirEventCandidate] = []
+        for candidate in self.candidates:
+            if (
+                not candidate.emitted
+                and candidate.last_frame == frame_index
+                and frame_index - candidate.first_frame >= self.dwell_frames
+                and len(candidate.positions) >= ELIXIR_EVENT_MIN_DETECTIONS
+            ):
+                candidate.emitted = True
+                confirmed.append(candidate)
+                self.recent_events.append((frame_index, candidate.mean_position))
+        return confirmed
+
+
+def remember_card_predictions(
+    histories: list[deque[CardObservation]],
+    predictions: list[tuple[str, float]],
+    frame_index: int,
+) -> None:
+    for history, (class_name, confidence) in zip(histories, predictions):
+        history.append(
+            CardObservation(
+                frame_index=frame_index,
+                class_name=class_name,
+                confidence=confidence,
+            )
+        )
+
+
+def resolve_played_card(
+    histories: list[deque[CardObservation]],
+    event_first_frame: int,
+    event_last_frame: int,
+    video_fps: float,
+) -> tuple[str, int | None, float]:
+    """Find the slot that became empty and vote on its preceding card class."""
+    empty_lead_frames = max(1, math.ceil(video_fps * CARD_EMPTY_LEAD_MS / 1000))
+    lookback_frames = max(
+        CARD_MIN_PREVIOUS_FRAMES,
+        math.ceil(video_fps * CARD_PREVIOUS_LOOKBACK_MS / 1000),
+    )
+    previous_sample_frames = max(
+        CARD_MIN_PREVIOUS_FRAMES,
+        math.ceil(video_fps * CARD_PREVIOUS_SAMPLE_MS / 1000),
+    )
+    empty_confirm_frames = max(
+        1,
+        math.ceil(video_fps * CARD_EMPTY_CONFIRM_MS / 1000),
+    )
+    best_match: tuple[tuple[float, ...], str, int, float] | None = None
+
+    for slot_index, history in enumerate(histories):
+        possible_empty_transitions = [
+            observation
+            for observation in history
+            if event_first_frame - empty_lead_frames
+            <= observation.frame_index
+            <= event_last_frame
+            and observation.class_name.lower() == EMPTY_CARD_CLASS
+        ]
+        for empty_observation in possible_empty_transitions:
+            empty_frame = empty_observation.frame_index
+            empty_support = [
+                observation
+                for observation in history
+                if empty_frame
+                <= observation.frame_index
+                <= min(event_last_frame, empty_frame + empty_confirm_frames)
+                and observation.class_name.lower() == EMPTY_CARD_CLASS
+            ]
+            if len(empty_support) < 2:
+                continue
+
+            previous_sequence = [
+                observation
+                for observation in history
+                if empty_frame - lookback_frames
+                <= observation.frame_index
+                < empty_frame
+            ][-previous_sample_frames:]
+            previous_observations = [
+                observation
+                for observation in previous_sequence
+                if observation.class_name.lower() != EMPTY_CARD_CLASS
+            ]
+            if (
+                len(previous_observations) < CARD_MIN_PREVIOUS_FRAMES
+                or len(previous_observations) / len(previous_sequence) < 0.60
+            ):
+                continue
+
+            class_scores: dict[str, float] = defaultdict(float)
+            class_counts: dict[str, int] = defaultdict(int)
+            for observation in previous_observations:
+                class_scores[observation.class_name] += observation.confidence
+                class_counts[observation.class_name] += 1
+
+            class_name = max(
+                class_scores,
+                key=lambda name: (class_scores[name], class_counts[name], name),
+            )
+            class_count = class_counts[class_name]
+            average_confidence = class_scores[class_name] / class_count
+            score = (
+                -float(abs(empty_frame - event_first_frame)),
+                float(len(empty_support)),
+                float(class_count),
+                average_confidence,
+            )
+            match = (score, class_name, slot_index + 1, average_confidence)
+            if best_match is None or match[0] > best_match[0]:
+                best_match = match
+
+    if best_match is None:
+        return "unknown", None, 0.0
+    _, class_name, slot_number, confidence = best_match
+    return class_name, slot_number, confidence
+
+
+def battlefield_position_to_cell(
+    position: tuple[float, float],
+    battlefield_shape: tuple[int, ...],
+) -> tuple[int, int] | None:
+    battlefield_height, battlefield_width = battlefield_shape[:2]
+    center_x, center_y = position
+    if not (
+        0 <= center_x < battlefield_width
+        and 0 <= center_y < battlefield_height
+    ):
+        return None
+    column = int(center_x / battlefield_width * FIELD_COLUMNS) + 1
+    row = int(center_y / battlefield_height * FIELD_ROWS) + 1
+    return column, row
+
+
+def battlefield_position_to_field_cell(
+    position: tuple[float, float],
+    battlefield_shape: tuple[int, ...],
+) -> tuple[int, int] | None:
+    """Return a 1-based cell inside the 32x18 field, including # tiles."""
+    return battlefield_position_to_cell(position, battlefield_shape)
+
+
+def create_event_logger(log_path: Path) -> logging.Logger:
+    logger = logging.getLogger("battle_events")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    if logger.handlers:
+        return logger
+
+    formatter = logging.Formatter("%(asctime)s | %(message)s")
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+    return logger
 
 
 class BoundingBoxKalmanFilter:
@@ -471,6 +774,16 @@ bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 bar_kalman_last_seen: dict[int, int] = {}
 elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 elixir_kalman_last_seen: dict[int, int] = {}
+elixir_event_tracker = ElixirEventTracker(
+    video_fps=fps,
+    battlefield_width=crop_x2 - crop_x1,
+    battlefield_height=crop_y2 - crop_y1,
+)
+card_history_length = max(1, math.ceil(fps * CARD_HISTORY_MS / 1000))
+card_histories: list[deque[CardObservation]] = [
+    deque(maxlen=card_history_length) for _ in range(CARD_COUNT)
+]
+event_logger = create_event_logger(EVENT_LOG_PATH)
 field_background = build_field_background()
 cv2.namedWindow(FIELD_WINDOW_NAME, cv2.WINDOW_NORMAL)
 cv2.resizeWindow(
@@ -537,6 +850,7 @@ while cap.isOpened():
     # Собираем данные о кадре
     frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
     field_objects: list[tuple[str, int | None, float, float]] = []
+    elixir_centers: list[tuple[float, float]] = []
     bar_detection_count = 0
     elixir_detection_count = (
         0 if elixir_result.boxes is None else len(elixir_result.boxes)
@@ -692,14 +1006,12 @@ while cap.isOpened():
             confidence = float(box.conf[0])
             x1, y1, x2, y2 = map(float, box.xyxy[0].tolist())
             track_id = int(box.id[0]) if box.id is not None else None
-            field_objects.append(
-                (
-                    "elixir",
-                    track_id,
-                    (x1 + x2) / 2,
-                    (y1 + y2) / 2,
-                )
-            )
+            elixir_center = ((x1 + x2) / 2, (y1 + y2) / 2)
+            if battlefield_position_to_field_cell(
+                elixir_center,
+                battlefield.shape,
+            ) is not None:
+                elixir_centers.append(elixir_center)
             frame_data["objects"].append(
                 {
                     "track_id": track_id,
@@ -722,12 +1034,50 @@ while cap.isOpened():
         (cards_x1, cards_y1, cards_x2, cards_y2),
     )
     card_predictions = classify_cards(classification_cards_model, card_images)
+    remember_card_predictions(card_histories, card_predictions, frame_count)
     draw_card_predictions(
         output_frame,
         card_predictions,
         card_slots,
         cards_y1,
     )
+
+    confirmed_events = elixir_event_tracker.update(elixir_centers, frame_count)
+    for event in confirmed_events:
+        mean_position = event.mean_position
+        cell = battlefield_position_to_field_cell(
+            mean_position,
+            battlefield.shape,
+        )
+        if cell is None:
+            continue
+        card_name, card_slot, card_confidence = resolve_played_card(
+            card_histories,
+            event.first_frame,
+            event.last_frame,
+            fps,
+        )
+        column, row = cell
+        duration_ms = round(
+            (event.last_frame - event.first_frame) * 1000 / fps
+        )
+        battle_time_ms = round(event.first_frame * 1000 / fps)
+        event_logger.info(
+            "Сыграна карта: %s; слот=%s; уверенность=%.2f; "
+            "клетка=(столбец=%d, строка=%d); "
+            "средняя позиция=(%.1f, %.1f); время_боя=%d мс; "
+            "длительность=%d мс; детекций=%d",
+            card_name,
+            card_slot if card_slot is not None else "?",
+            card_confidence,
+            column,
+            row,
+            mean_position[0],
+            mean_position[1],
+            battle_time_ms,
+            duration_ms,
+            len(event.positions),
+        )
 
     # Показываем номер кадра
     cv2.putText(
@@ -759,7 +1109,40 @@ while cap.isOpened():
     )
     cv2.imshow("Tracking", resized_frame)
     cv2.imshow(FIELD_WINDOW_NAME, field_frame)
-    # cv2.imshow("Cards", frame_cards)
+    if show_battlefield:
+        battlefield_height, battlefield_width = battlefield.shape[:2]
+        debug_width = min(BATTLEFIELD_DEBUG_WIDTH, battlefield_width)
+        debug_height = max(
+            1,
+            round(battlefield_height * debug_width / battlefield_width),
+        )
+        battlefield_preview = cv2.resize(
+            battlefield,
+            (debug_width, debug_height),
+            interpolation=cv2.INTER_AREA,
+        )
+        cv2.imshow(BATTLEFIELD_DEBUG_WINDOW, battlefield_preview)
+    if show_cards:
+        cards_preview = frame[cards_y1:cards_y2, cards_x1:cards_x2].copy()
+        local_card_slots = [
+            (slot_x1 - cards_x1, slot_x2 - cards_x1)
+            for slot_x1, slot_x2 in card_slots
+        ]
+        for slot_x1, slot_x2 in local_card_slots:
+            cv2.rectangle(
+                cards_preview,
+                (slot_x1, 0),
+                (slot_x2 - 1, cards_preview.shape[0] - 1),
+                (255, 255, 0),
+                2,
+            )
+        draw_card_predictions(
+            cards_preview,
+            card_predictions,
+            local_card_slots,
+            35,
+        )
+        cv2.imshow(CARDS_DEBUG_WINDOW, cards_preview)
 
     out.write(output_frame)
     if cv2.waitKey(1) & 0xFF == ord("q"):

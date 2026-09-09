@@ -42,9 +42,21 @@ IOU = 0.50
 MAX_DET = 500
 DEVICE = 0
 QUANTIZE = 16  # FP16; use None for FP32
+FPS_PROCESS = 30  # Frames per video second to process; None uses source FPS.
+
+# Field cell color: compare R * RED_WEIGHT with B * BLUE_WEIGHT.
+# Increase a channel's weight to select its color more often.
+FIELD_COLOR_RED_WEIGHT = 1.0
+FIELD_COLOR_BLUE_WEIGHT = 1.5
+
+if any(
+    not math.isfinite(weight) or weight <= 0
+    for weight in (FIELD_COLOR_RED_WEIGHT, FIELD_COLOR_BLUE_WEIGHT)
+):
+    raise ValueError("Field color weights must be finite positive numbers")
 
 # Debug window with the cropped and annotated battlefield.
-show_battlefield = True
+show_battlefield = False
 BATTLEFIELD_DEBUG_WINDOW = "Battlefield debug"
 BATTLEFIELD_DEBUG_WIDTH = 500
 
@@ -73,8 +85,14 @@ if not cap.isOpened():
 fps = cap.get(cv2.CAP_PROP_FPS)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-if fps <= 0:
+if not math.isfinite(fps) or fps <= 0:
     raise ValueError(f"Invalid video FPS: {fps}")
+if FPS_PROCESS is not None and (
+    not math.isfinite(FPS_PROCESS) or FPS_PROCESS <= 0
+):
+    raise ValueError("FPS_PROCESS must be a positive number or None")
+process_fps = fps if FPS_PROCESS is None else min(float(FPS_PROCESS), fps)
+print(f"Video FPS: {fps:g}; processing/output FPS: {process_fps:g}")
 
 video_size = (width, height)
 if video_size not in BATTLEFIELDS:
@@ -109,7 +127,7 @@ if cards_x2 - cards_x1 < 4:
 
 OUTPUT_VIDEO.parent.mkdir(parents=True, exist_ok=True)
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-out = cv2.VideoWriter(str(OUTPUT_VIDEO), fourcc, fps, (width, height))
+out = cv2.VideoWriter(str(OUTPUT_VIDEO), fourcc, process_fps, (width, height))
 if not out.isOpened():
     raise RuntimeError(f"Cannot create output video: {OUTPUT_VIDEO}")
 
@@ -157,9 +175,9 @@ CARD_COUNT = 4
 CARD_IMGSZ = 224
 EMPTY_CARD_CLASS = "empty"
 CARD_HISTORY_MS = 2000
-CARD_EMPTY_LEAD_MS = 300  # было 150
-CARD_PREVIOUS_LOOKBACK_MS = 0  # было 800
-CARD_PREVIOUS_SAMPLE_MS = 500  # было 300
+CARD_EMPTY_LEAD_MS = 900  # было 150
+CARD_PREVIOUS_LOOKBACK_MS = 500  # было 800
+CARD_PREVIOUS_SAMPLE_MS = 100  # было 300
 CARD_EMPTY_CONFIRM_MS = 200
 CARD_MIN_PREVIOUS_FRAMES = 2  # было 3
 ELIXIR_EVENT_DWELL_MS = 300
@@ -168,6 +186,7 @@ ELIXIR_EVENT_COOLDOWN_MS = 800
 ELIXIR_EVENT_REGION_RADIUS_CELLS = 1.5
 ELIXIR_EVENT_MIN_DETECTIONS = 3
 EVENT_LOG_PATH = SCRIPT_DIR / "battle_events.log"
+CARD_EVENT_MARKER_MS = 1000
 FIELD_ROWS = len(FIELD)
 FIELD_COLUMNS = len(FIELD[0]) if FIELD else 0
 FIELD_CELL_SIZE = 25
@@ -199,20 +218,71 @@ def build_field_background() -> np.ndarray:
     return canvas
 
 
-def track_color(object_type: str, track_id: int | None) -> tuple[int, int, int]:
-    """Return a stable, visually distinct BGR color for a tracked object."""
-    if track_id is None:
+def draw_card_event_markers(
+    canvas: np.ndarray,
+    markers: list[tuple[int, int, str, int]],
+    frame_index: int,
+) -> None:
+    """Draw unexpired card events over units, using 1-based field cells."""
+    markers[:] = [marker for marker in markers if frame_index < marker[3]]
+    for column, row, card_name, _ in markers:
+        left = (column - 1) * FIELD_CELL_SIZE
+        top = (row - 1) * FIELD_CELL_SIZE
+        right = left + FIELD_CELL_SIZE - 1
+        bottom = top + FIELD_CELL_SIZE - 1
+        cv2.rectangle(canvas, (left, top), (right, bottom), (0, 255, 255), 3)
+        cv2.drawMarker(
+            canvas,
+            (left + FIELD_CELL_SIZE // 2, top + FIELD_CELL_SIZE // 2),
+            (255, 255, 255),
+            cv2.MARKER_TILTED_CROSS,
+            max(5, FIELD_CELL_SIZE // 2),
+            2,
+        )
+        label = f"Played: {card_name}"
+        (text_width, text_height), baseline = cv2.getTextSize(
+            label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1
+        )
+        text_x = max(2, min(left, canvas.shape[1] - text_width - 3))
+        text_y = top - 6
+        if text_y < text_height + 3:
+            text_y = bottom + text_height + 6
+        cv2.rectangle(
+            canvas,
+            (text_x - 2, text_y - text_height - 2),
+            (text_x + text_width + 2, text_y + baseline + 2),
+            (0, 0, 0),
+            -1,
+        )
+        cv2.putText(
+            canvas, label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX,
+            0.45, (0, 255, 255), 1, cv2.LINE_AA,
+        )
+
+
+def track_color(
+    track_id: int | None,
+    mean_color_bgr: tuple[float, float, float] | None,
+) -> tuple[int, int, int]:
+    """Compare weighted mean channels; vary the chosen shade by track ID."""
+    if mean_color_bgr is None:
         return 190, 190, 190
-    namespace = 0 if object_type == "blue_rect" else 1
-    hue = (int(track_id) * 47 + namespace * 83) % 180
-    hsv = np.uint8([[[hue, 220, 255]]])
-    return tuple(int(value) for value in cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0, 0])
+    blue, _, red = mean_color_bgr
+    red_score = red * FIELD_COLOR_RED_WEIGHT
+    blue_score = blue * FIELD_COLOR_BLUE_WEIGHT
+    intensity = 180 + (int(track_id) * 47 % 76) if track_id is not None else 255
+    if red_score > blue_score:
+        return 40, 40, intensity
+    if blue_score > red_score:
+        return intensity, 40, 40
+    return 190, 190, 190
 
 
 def draw_objects_on_field(
     background: np.ndarray,
     objects: list[tuple[str, int | None, float, float]],
     battlefield_shape: tuple[int, ...],
+    mean_colors: dict[int, tuple[float, float, float] | None],
 ) -> np.ndarray:
     """Highlight field cells containing tracked unit centers."""
     canvas = background.copy()
@@ -234,7 +304,7 @@ def draw_objects_on_field(
             and 0 <= row_index < FIELD_ROWS
         ):
             continue
-        color = track_color(object_type, track_id)
+        color = track_color(track_id, mean_colors.get(track_id))
         cell_x1 = column_index * FIELD_CELL_SIZE
         cell_y1 = row_index * FIELD_CELL_SIZE
         cell_x2 = cell_x1 + FIELD_CELL_SIZE - 1
@@ -499,16 +569,18 @@ def resolve_played_card(
     event_first_frame: int,
     event_last_frame: int,
     video_fps: float,
+    sampling_fps: float | None = None,
 ) -> tuple[str, int | None, float]:
     """Find the slot that became empty and vote on its preceding card class."""
+    sampling_fps = video_fps if sampling_fps is None else sampling_fps
     empty_lead_frames = max(1, math.ceil(video_fps * CARD_EMPTY_LEAD_MS / 1000))
     lookback_frames = max(
-        CARD_MIN_PREVIOUS_FRAMES,
+        math.ceil(CARD_MIN_PREVIOUS_FRAMES * video_fps / sampling_fps),
         math.ceil(video_fps * CARD_PREVIOUS_LOOKBACK_MS / 1000),
     )
     previous_sample_frames = max(
         CARD_MIN_PREVIOUS_FRAMES,
-        math.ceil(video_fps * CARD_PREVIOUS_SAMPLE_MS / 1000),
+        math.ceil(sampling_fps * CARD_PREVIOUS_SAMPLE_MS / 1000),
     )
     empty_confirm_frames = max(
         1,
@@ -770,6 +842,23 @@ def extract_blue_rect(
     return crop
 
 
+def iter_processing_frames(capture, source_fps: float, target_fps: float):
+    """Sample video uniformly, yielding original indices for all event timers."""
+    source_index = -1
+    sample_index = 0
+    while capture.isOpened() and capture.grab():
+        source_index += 1
+        # Absolute deadlines also handle non-integer ratios, e.g. 59.94 -> 20.
+        next_index = math.ceil(sample_index * source_fps / target_fps - 1e-9)
+        if source_index < next_index:
+            continue
+        ret, frame = capture.retrieve()
+        if not ret:
+            break
+        yield source_index, frame
+        sample_index += 1
+
+
 bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 bar_kalman_last_seen: dict[int, int] = {}
 elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
@@ -779,11 +868,13 @@ elixir_event_tracker = ElixirEventTracker(
     battlefield_width=crop_x2 - crop_x1,
     battlefield_height=crop_y2 - crop_y1,
 )
-card_history_length = max(1, math.ceil(fps * CARD_HISTORY_MS / 1000))
+card_history_length = max(1, math.ceil(process_fps * CARD_HISTORY_MS / 1000) + 1)
 card_histories: list[deque[CardObservation]] = [
     deque(maxlen=card_history_length) for _ in range(CARD_COUNT)
 ]
 event_logger = create_event_logger(EVENT_LOG_PATH)
+card_event_markers: list[tuple[int, int, str, int]] = []
+card_event_marker_frames = max(1, math.ceil(fps * CARD_EVENT_MARKER_MS / 1000))
 field_background = build_field_background()
 cv2.namedWindow(FIELD_WINDOW_NAME, cv2.WINDOW_NORMAL)
 cv2.resizeWindow(
@@ -792,11 +883,8 @@ cv2.resizeWindow(
     field_background.shape[0],
 )
 
-frame_count = 0
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
+    # frame_count remains a source-video index: all ms thresholds use source fps.
 
     # frame_cards = get_image_cards_format(frame)
     battlefield = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
@@ -849,6 +937,8 @@ while cap.isOpened():
 
     # Собираем данные о кадре
     frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
+    # Current-frame track_id -> mean (B, G, R), or None for an empty crop.
+    bar_mean_colors: dict[int, tuple[float, float, float] | None] = {}
     field_objects: list[tuple[str, int | None, float, float]] = []
     elixir_centers: list[tuple[float, float]] = []
     bar_detection_count = 0
@@ -873,6 +963,20 @@ while cap.isOpened():
             x1, y1, x2, y2 = box
             center_x = (x1 + x2) / 2
             center_y = (y1 + y2) / 2
+
+            # Use original pixels: battlefield may already contain annotations.
+            roi_left = max(0, min(battlefield.shape[1], math.floor(x1)))
+            roi_top = max(0, min(battlefield.shape[0], math.floor(y1)))
+            roi_right = max(0, min(battlefield.shape[1], math.ceil(x2)))
+            roi_bottom = max(0, min(battlefield.shape[0], math.ceil(y2)))
+            mean_color_bgr = None
+            if roi_right > roi_left and roi_bottom > roi_top:
+                color_roi = frame[
+                    crop_y1 + roi_top : crop_y1 + roi_bottom,
+                    crop_x1 + roi_left : crop_x1 + roi_right,
+                ]
+                mean_color_bgr = cv2.mean(color_roi)[:3]
+            bar_mean_colors[track_id] = mean_color_bgr
 
             # Ищем совпадающие бары и левелы
             if (
@@ -972,6 +1076,7 @@ while cap.isOpened():
                 "track_id": track_id,
                 "class": model.names[class_id],
                 "confidence": conf,
+                "mean_color_bgr": mean_color_bgr,
                 "bbox": [x1, y1, x2, y2],
                 "center": [center_x, center_y],
             }
@@ -1056,8 +1161,12 @@ while cap.isOpened():
             event.first_frame,
             event.last_frame,
             fps,
+            sampling_fps=process_fps,
         )
         column, row = cell
+        card_event_markers.append(
+            (column, row, card_name, frame_count + card_event_marker_frames)
+        )
         duration_ms = round(
             (event.last_frame - event.first_frame) * 1000 / fps
         )
@@ -1106,8 +1215,10 @@ while cap.isOpened():
         field_background,
         field_objects,
         battlefield.shape,
+        bar_mean_colors,
     )
     cv2.imshow("Tracking", resized_frame)
+    draw_card_event_markers(field_frame, card_event_markers, frame_count)
     cv2.imshow(FIELD_WINDOW_NAME, field_frame)
     if show_battlefield:
         battlefield_height, battlefield_width = battlefield.shape[:2]
@@ -1147,8 +1258,6 @@ while cap.isOpened():
     out.write(output_frame)
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
-
-    frame_count += 1
 
 cap.release()
 cv2.destroyAllWindows()

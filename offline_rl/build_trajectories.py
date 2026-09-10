@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_left
 from collections import Counter
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -179,7 +180,9 @@ class TrajectoryCollector:
                         "previous_card": old["card"],
                     })
             previous_elixir = self.last_frame["elixir_bar"]["value"]
-            if previous_elixir - frame["elixir_bar"]["value"] >= 0.8:
+            current_elixir = frame["elixir_bar"]["value"]
+            if (previous_elixir is not None and current_elixir is not None
+                    and previous_elixir - current_elixir >= 0.8):
                 self.elixir_drops.append((previous_time, timestamp))
         if timestamp + 1e-6 >= self.next_due_ms:
             self.observations.append(make_observation(frame))
@@ -250,6 +253,68 @@ def invalidate(transition: dict, reason: str) -> None:
         transition["invalid_reasons"].append(reason)
 
 
+def consolidate_events(events: list[dict]) -> list[dict]:
+    """One hand-empty onset labels at most one play; retain raw candidates.
+
+    Only exact same card/slot/empty frame/action time can be duplicates.
+    Conflicting cells do NOT get averaged or guessed: card/slot remain usable,
+    while position_valid=False excludes coordinate supervision and history.
+    """
+    result = deepcopy(events)
+    groups = {}
+    for index, event in enumerate(result):
+        for key in ("duplicate_of", "duplicate_indices", "position_candidates", "position_valid"):
+            event.pop(key, None)
+        if event.get("empty_frame") is None or event.get("slot") not in (1, 2, 3, 4) or not is_known_card(event["card"]):
+            continue
+        key = (event["slot"], event["empty_frame"], event["card"], event["action_timestamp_ms"])
+        groups.setdefault(key, []).append(index)
+    for indices in groups.values():
+        canonical = min(indices, key=lambda i: (result[i]["confirmed_at_ms"], i))
+        main = result[canonical]
+        candidates = sorted({(result[i]["row"], result[i]["column"]) for i in indices})
+        main["duplicate_indices"] = [i for i in indices if i != canonical]
+        main["position_candidates"] = [{"row": row, "column": column} for row, column in candidates]
+        main["position_valid"] = len(candidates) == 1
+        for index in indices:
+            if index != canonical:
+                result[index]["duplicate_of"] = canonical
+    return result
+
+
+def align_event_onsets(observations, events, empty_transitions, config):
+    """Correct a late empty sample only using an observed, unambiguous onset.
+
+    Do not search arbitrary earlier states for a convenient card or change slots.
+    When full-rate onset evidence is missing/conflicting, keep the label invalid.
+    """
+    result = deepcopy(events)
+    times = [state["timestamp_ms"] for state in observations]
+    def matches(index, event):
+        if not 0 <= index < len(observations) - 1:
+            return False
+        hand = next((card for card in observations[index]["hand"] if card["slot"] == event["slot"]), None)
+        return hand is not None and hand["card"] == event["card"] and hand["confidence"] >= config.min_card_confidence
+    for event in result:
+        timestamp = event["action_timestamp_ms"]
+        if matches(bisect_left(times, timestamp) - 1, event):
+            continue
+        candidates = [empty for empty in empty_transitions
+                      if empty.get("previous_card") == event["card"] and empty["slot"] == event["slot"]
+                      and 0 <= timestamp - empty["timestamp_ms"] <= config.uncertainty_ms
+                      and empty["timestamp_ms"] <= event["confirmed_at_ms"]
+                      and matches(bisect_left(times, empty["timestamp_ms"]) - 1, event)]
+        if len(candidates) == 1:
+            onset = candidates[0]
+            event["original_action_timestamp_ms"] = timestamp
+            event["action_timestamp_ms"] = onset["timestamp_ms"]
+            event["alignment_reason"] = "confirmed_empty_onset"
+            if "frame_number" in onset:
+                event["original_empty_frame"] = event.get("empty_frame")
+                event["empty_frame"] = onset["frame_number"]
+    return result
+
+
 def assemble_trajectory(
     observations: list[dict], events: list[dict], empty_transitions: list[dict],
     elixir_drops: list[tuple[float, float]], hp_rewards: HPRewardTracker,
@@ -257,6 +322,7 @@ def assemble_trajectory(
 ) -> dict:
     if result not in {"win", "loss", "draw"}:
         raise ValueError("result must be win, loss or draw")
+    events = consolidate_events(align_event_onsets(observations, events, empty_transitions, config))
     times = [observation["timestamp_ms"] for observation in observations]
     if len(times) < 2 or any(b <= a for a, b in zip(times, times[1:])):
         raise ValueError("Need at least two strictly increasing state timestamps")
@@ -279,6 +345,8 @@ def assemble_trajectory(
         in_context = 0 <= index < len(transitions)
         index = min(len(transitions) - 1, max(0, index))
         event["transition_index"] = index
+        if "duplicate_of" in event:
+            continue
         transition = transitions[index]
         transition["event_indices"].append(event_index)
         if len(transition["event_indices"]) > 1:
@@ -291,6 +359,7 @@ def assemble_trajectory(
                 "column": event["column"], "row": event["row"],
                 "timestamp_ms": action_time,
                 "confidence": float(event["confidence"]),
+                "position_valid": event.get("position_valid", True),
             }
         if not in_context:
             invalidate(transition, "no_pre_action_state")
@@ -310,7 +379,7 @@ def assemble_trajectory(
     # The same empty transition cannot label two drops / two actions.
     matches: dict[tuple, list[int]] = {}
     for event in events:
-        if event.get("empty_frame") is not None:
+        if event.get("empty_frame") is not None and "duplicate_of" not in event:
             key = (event["slot"], event["empty_frame"])
             matches.setdefault(key, []).append(event["transition_index"])
     for indices in matches.values():
@@ -345,7 +414,10 @@ def assemble_trajectory(
         for before, after, reason in suspicious_intervals:
             if times[i] <= after and times[i + 1] > before:
                 invalidate(transition, reason)
-        if any(slot["confidence"] < config.min_card_confidence
+        # A confirmed play needs its OWN slot to be reliable (checked above).
+        # Other uncertain hand slots are input uncertainty, not bad action labels.
+        # Noop has no positive evidence: retain conservative all-hand validation.
+        if transition["action"]["type"] == "noop" and any(slot["confidence"] < config.min_card_confidence
                or slot["card"].lower() in {"unknown", "none", ""}
                for slot in observations[i]["hand"]):
             invalidate(transition, "uncertain_hand")
@@ -391,10 +463,15 @@ def assemble_trajectory(
         "states": len(observations), "transitions": len(transitions),
         "video_duration_seconds": (times[-1] - times[0]) / 1000.0,
         "detected_events": len(events),
+        "duplicate_events": sum("duplicate_of" in e for e in events),
+        "unique_events": sum("duplicate_of" not in e for e in events),
+        "time_aligned_events": sum(e.get("alignment_reason") == "confirmed_empty_onset" for e in events),
         "resolved_events": sum(is_known_card(e["card"]) and e["slot"] in (1, 2, 3, 4)
                                for e in events),
         "valid_play_transitions": sum(t["action_valid"] and t["action"]["type"] == "play"
                                       for t in transitions),
+        "valid_position_transitions": sum(t["action_valid"] and t["action"]["type"] == "play"
+                                           and t["action"].get("position_valid", True) for t in transitions),
         "valid_noop_transitions": sum(t["action_valid"] and t["action"]["type"] == "noop"
                                       for t in transitions),
         "action_valid_fraction": sum(t["action_valid"] for t in transitions) / len(transitions),
@@ -411,11 +488,12 @@ def assemble_trajectory(
         "reward_filter": dict(hp_rewards.stats), "warnings": warnings,
     }
     return {
-        "schema_version": 1, "result": result, "config": asdict(config),
+        "schema_version": 1, "action_label_version": 2, "result": result, "config": asdict(config),
         "coordinates": {"rows": 32, "columns": 18, "origin": "top-left",
                         "index_base": 1, "hash_cells_allowed": True},
         "observations": observations, "transitions": transitions,
         "events": events, "reward_evidence": hp_rewards.events,
+        "empty_transitions": deepcopy(empty_transitions), "elixir_drops": list(elixir_drops),
         "uncertainty_intervals": [
             {"start_ms": before, "end_ms": after, "reason": reason}
             for before, after, reason in suspicious_intervals
@@ -456,10 +534,50 @@ def save_trajectory(path: Path, trajectory: dict, overwrite: bool = False) -> No
             temp_path.unlink()
 
 
+def relabel_trajectory(path: Path) -> dict:
+    """Rebuild labels from saved evidence without rerunning perception or editing states."""
+    old = json.loads(path.read_text(encoding="utf-8-sig"))
+    config = BuildConfig(**old["config"])
+    config.validate()
+    # Legacy JSONs kept only unmatched evidence as uncertainty intervals.
+    # Preserve those exclusions exactly; don't invent missing cards/onsets.
+    empty = old.get("empty_transitions")
+    drops = old.get("elixir_drops")
+    if empty is None:
+        empty = [{"slot": None, "timestamp_ms": item["end_ms"] - config.uncertainty_ms,
+                  "previous_timestamp_ms": item["start_ms"], "legacy_unmatched": True}
+                 for item in old.get("uncertainty_intervals", []) if item["reason"] == "unmatched_empty_slot"]
+    if drops is None:
+        drops = [(item["start_ms"], item["end_ms"] - config.uncertainty_ms)
+                 for item in old.get("uncertainty_intervals", []) if item["reason"] == "unmatched_elixir_spend"]
+    rewards = HPRewardTracker(config)
+    rewards.events = deepcopy(old["reward_evidence"])
+    rewards.stats = Counter(old.get("metrics", {}).get("reward_filter", {}))
+    for state in old["observations"]:
+        for tower, hp in state["tower_hp"].items():
+            if hp.get("hp") is not None and not hp.get("stale", True):
+                rewards.floor[tower] = hp["hp"]
+    new = assemble_trajectory(old["observations"], old["events"], empty, drops, rewards, old["result"], config)
+    new["metadata"] = deepcopy(old["metadata"])
+    new["metadata"]["relabeling"] = {
+        "source_json": str(path.resolve()), "source_json_sha256": file_sha256(path),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "previous_valid_plays": old["metrics"]["valid_play_transitions"],
+        "legacy_evidence": "empty_transitions" not in old,
+    }
+    for warning in old.get("metrics", {}).get("warnings", []):
+        if "Video ended" in warning and warning not in new["metrics"]["warnings"]:
+            new["metrics"]["warnings"].append(warning)
+    if [t["reward"] for t in new["transitions"]] != [t["reward"] for t in old["transitions"]]:
+        raise ValueError("Relabeling unexpectedly changed rewards; original JSON left untouched")
+    return new
+
+
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("video", type=Path, help="One complete battle video")
-    parser.add_argument("--result", required=True, choices=("win", "loss", "draw"),
+    parser.add_argument("video", nargs="?", type=Path, help="One complete battle video")
+    parser.add_argument("--relabel-json", type=Path, help="Rebuild labels from existing JSON; uses its saved config/result")
+    parser.add_argument("--result", choices=("win", "loss", "draw"),
                         help="Outcome from the perspective of the bottom player's hand")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--state-fps", type=float, default=5.0)
@@ -482,6 +600,21 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    if args.relabel_json:
+        if args.video is not None or args.result is not None:
+            raise ValueError("--relabel-json uses the saved observations/result; omit video and --result")
+        output = args.output_dir.resolve() / args.relabel_json.name
+        if output == args.relabel_json.resolve():
+            raise ValueError("Choose a different --output-dir for relabeling; original JSON is preserved")
+        if output.exists() and not args.overwrite:
+            raise FileExistsError(f"Trajectory already exists: {output}")
+        trajectory = relabel_trajectory(args.relabel_json)
+        save_trajectory(output, trajectory, args.overwrite)
+        print(f"Saved relabeled trajectory: {output}")
+        print(json.dumps(trajectory["metrics"], ensure_ascii=False, indent=2))
+        return 0
+    if args.video is None or args.result is None:
+        raise ValueError("Video extraction requires VIDEO --result win|loss|draw")
     config = BuildConfig(**{
         key: getattr(args, key) for key in asdict(BuildConfig()) if hasattr(args, key)
     })

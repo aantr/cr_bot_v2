@@ -87,6 +87,80 @@ class TrajectoryTests(unittest.TestCase):
         }])
         self.assertIn("unmatched_empty_slot", data["transitions"][0]["invalid_reasons"])
 
+    def test_unrelated_uncertain_card_does_not_discard_known_play(self):
+        states = [observation(0), observation(200, "empty"), observation(400)]
+        states[0]["hand"][3]["confidence"] = .2
+        data = assemble([event()], states)
+        self.assertTrue(data["transitions"][0]["action_valid"])
+        # No-op still needs reliable hand evidence.
+        self.assertFalse(assemble([], states)["transitions"][0]["action_valid"])
+        states[0]["hand"][0]["confidence"] = .2
+        self.assertFalse(assemble([event()], states)["transitions"][0]["action_valid"])
+
+    def test_exact_duplicates_merge_without_changing_raw_evidence(self):
+        from copy import deepcopy
+        first, second = event(), event()
+        second["confirmed_at_ms"] = 600
+        events = [first, second]
+        original = deepcopy(events)
+        data = assemble(events)
+        self.assertEqual(events, original)
+        self.assertTrue(data["transitions"][0]["action_valid"])
+        self.assertTrue(data["transitions"][0]["action"]["position_valid"])
+        self.assertEqual(data["metrics"]["duplicate_events"], 1)
+        self.assertEqual(data["events"][1]["duplicate_of"], 0)
+        self.assertEqual(data["transitions"][0]["event_indices"], [0])
+
+    def test_same_hand_event_conflicting_cells_keeps_card_but_masks_position(self):
+        data = assemble([event(column=9), event(column=16)])
+        action = data["transitions"][0]["action"]
+        self.assertTrue(data["transitions"][0]["action_valid"])
+        self.assertFalse(action["position_valid"])
+        self.assertEqual(action["card"], "knight")
+        self.assertEqual(data["metrics"]["valid_play_transitions"], 1)
+        self.assertEqual(data["metrics"]["valid_position_transitions"], 0)
+        self.assertEqual(len(data["events"][0]["position_candidates"]), 2)
+
+    def test_conflicting_cards_are_not_duplicates(self):
+        data = assemble([event(), event(card="giant")])
+        self.assertFalse(data["transitions"][0]["action_valid"])
+        self.assertEqual(data["transitions"][0]["action"]["type"], "multiple")
+
+    def test_late_empty_time_uses_observed_onset_not_arbitrary_past_card(self):
+        states = [observation(0), observation(200, "empty"), observation(400, "empty")]
+        late = event(250, empty_frame=8)
+        self.assertFalse(assemble([late], states)["transitions"][1]["action_valid"])
+        onset = {"slot": 1, "timestamp_ms": 180, "previous_timestamp_ms": 150,
+                 "previous_card": "knight", "frame_number": 6}
+        data = assemble([late], states, empty_transitions=[onset])
+        self.assertTrue(data["transitions"][0]["action_valid"])
+        self.assertEqual(data["transitions"][0]["action"]["timestamp_ms"], 180)
+        self.assertEqual(data["events"][0]["original_action_timestamp_ms"], 250)
+        self.assertEqual(data["metrics"]["time_aligned_events"], 1)
+        # An onset for another card cannot repair this event.
+        onset["previous_card"] = "giant"
+        self.assertFalse(assemble([late], states, empty_transitions=[onset])["transitions"][1]["action_valid"])
+
+    def test_relabel_legacy_preserves_input_states_rewards_and_exclusions(self):
+        from offline_rl.build_trajectories import relabel_trajectory
+        data = assemble([event(), event(column=16)], empty_transitions=[{
+            "slot": 2, "timestamp_ms": 300, "previous_timestamp_ms": 280}])
+        data["metadata"] = {}
+        del data["empty_transitions"], data["elixir_drops"]  # legacy evidence format
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "old.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            before = path.read_bytes()
+            repaired = relabel_trajectory(path)
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(repaired["observations"], data["observations"])
+            self.assertEqual([t["reward"] for t in repaired["transitions"]],
+                             [t["reward"] for t in data["transitions"]])
+            self.assertIn("unmatched_empty_slot", repaired["transitions"][1]["invalid_reasons"])
+            self.assertFalse(repaired["transitions"][0]["action"]["position_valid"])
+            with self.assertRaisesRegex(ValueError, "original JSON is preserved"):
+                main(["--relabel-json", str(path), "--output-dir", temporary])
+
     def test_hp_missing_and_increases_do_not_pay_twice(self):
         rewards = HPRewardTracker(BuildConfig())
         for value, timestamp, stale in [

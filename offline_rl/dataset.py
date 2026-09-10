@@ -154,6 +154,7 @@ def validate_trajectory(data: dict) -> None:
         action = transition["action"]
         if transition["action_valid"]:
             if action["type"] == "play":
+                _boolean(action.get("position_valid", True), "position_valid")
                 _integer(action["slot"], "action slot", 1, 4)
                 _integer(action["row"], "action row", 1, 32)
                 _integer(action["column"], "action column", 1, 18)
@@ -266,7 +267,8 @@ class ObservationEncoder:
         card_id = self.card_to_id.get(label(action["card"]), UNKNOWN_ID)
         if card_id <= EMPTY_CARD_ID:
             return [PREV_UNKNOWN, 0, 0, 0, 0], False
-        return [PREV_PLAY, card_id, action["slot"], action["row"], action["column"]], True
+        row, column = (action["row"], action["column"]) if action.get("position_valid", True) else (0, 0)
+        return [PREV_PLAY, card_id, action["slot"], row, column], True
 
     def encode(self, observations, previous_transitions, previous_timestamps,
                step_indices, field_layout, battle_id="live"):
@@ -407,6 +409,8 @@ class TrajectoryDataset(Dataset):
       previous coordinates/slots retain 1-based values with 0 for absent fields.
     targets: type 0=noop/1=play, card-ID, slot 0..3, row 0..31, column 0..17;
       unavailable targets use IGNORE_INDEX=-100, suitable for CrossEntropyLoss.
+    position_loss_mask excludes ambiguous deployment cells but preserves the
+      play/slot targets. Unknown prior play coordinates use reserved 0 tokens.
     All sample tensors are CPU tensors and support default DataLoader collation.
     """
 
@@ -485,7 +489,8 @@ class TrajectoryDataset(Dataset):
                 if action[0] == PREV_PLAY:
                     for key, value in zip(("card_id", "card_slot", "row", "column"),
                                           (action[1], action[2] - 1, action[3] - 1, action[4] - 1)):
-                        sample["targets"][key][t] = value
+                        if key not in {"row", "column"} or transition["action"].get("position_valid", True):
+                            sample["targets"][key][t] = value
             for name, scale in (("reward", norm.reward), ("return_to_go", norm.return_to_go),
                                 ("discounted_return_to_go", norm.return_to_go)):
                 sample["rewards" if name == "reward" else name][t, 0] = transition[name] / scale
@@ -497,6 +502,7 @@ class TrajectoryDataset(Dataset):
         if self.supervise == "last":
             sample["loss_mask"][:length - 1] = False
         sample["play_loss_mask"] = sample["loss_mask"] & (sample["targets"]["action_type"] == 1)
+        sample["position_loss_mask"] = sample["play_loss_mask"] & (sample["targets"]["row"] != IGNORE_INDEX)
         # CE(ignore_index=-100) also safely excludes context-only target positions.
         for target in sample["targets"].values():
             target[~sample["loss_mask"]] = IGNORE_INDEX

@@ -76,6 +76,7 @@ class ActionPredictor:
     def __init__(self, checkpoint, *, device="auto", field_layout=None,
                  card_costs=None, min_card_confidence=0.0):
         device_name = str(device)
+        
         if device_name == "auto":
             device_name = "cuda:0" if torch.cuda.is_available() else "cpu"
         if device_name.isdigit():
@@ -167,6 +168,8 @@ class ActionPredictor:
                 raise ValueError("Only play/noop can have previous_action_valid=true")
             if valid and action["type"] == "play":
                 try:
+                    if not isinstance(action.get("position_valid", True), bool):
+                        raise ValueError("position_valid must be boolean")
                     _coordinate(action["slot"], "action slot", 4)
                     _coordinate(action["row"], "action row", 32)
                     _coordinate(action["column"], "action column", 18)

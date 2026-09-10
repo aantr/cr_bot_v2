@@ -45,8 +45,10 @@ confirms the elixir event 300 ms later. Future card/HP classifications are never
 backfilled into earlier states. Coordinates and hand slots are 1-based;
 row 1 is at the top, column 1 at the left; `#` cells are accepted.
 
-Unknown cards, low confidence, mismatched pre-action hands, multiple actions in
-one interval and reused empty transitions are masked with `action_valid=false`.
+Unknown cards, low confidence in the played slot, mismatched pre-action hands,
+genuinely multiple actions and conflicting empty-transition matches are masked
+with `action_valid=false`. Exact repeat confirmations are consolidated; uncertain
+coordinates use a separate position mask (see action-label repair below).
 Unmatched empty slots and apparent elixir spends also mask nearby intervals.
 Use this mask for action losses; do not delete those intervals and collapse
 elapsed time. No-op labels are inferred and can still contain missed detections.
@@ -87,6 +89,48 @@ currently unknown, and timestamp is elapsed video time.
 Split training/validation by `source_sha256` (whole battles), never by frames.
 For policy evaluation later, use held-out action accuracy/card accuracy,
 coordinate error on valid plays, and actual win rate in separately run games.
+
+## Action-label repair
+
+New builds use `action_label_version=2`. A confirmed play checks the played
+slot's confidence, not all four hand slots; uncertain unrelated cards no longer
+discard a reliable action. Noop labels still require reliable hand evidence.
+
+Events with exactly the same card, slot, empty frame and action timestamp are
+linked as duplicates. All raw candidates remain in `events` for audit. Matching
+cells keep full supervision; conflicting cells set `action.position_valid=false`
+and train only play/card/slot, never a guessed/averaged location. Conflicting
+cards/times or genuinely multiple plays still invalidate the action. Late event
+timestamps are corrected only when saved full-rate hand evidence gives a unique
+earlier empty onset and a reliable matching pre-action state. Missing evidence
+does not justify changing a card or slot.
+
+Rebuild labels from an existing JSON without rerunning detectors (from `v2`):
+
+```powershell
+python offline_rl/build_trajectories.py --relabel-json offline_rl/trajectories/last_20_percent-fe680f8c497c.json --output-dir offline_rl/trajectories_repaired
+```
+
+This mode uses the saved configuration/result; original observations and rewards
+are preserved. It refuses to overwrite the source JSON, even with `--overwrite`.
+Legacy files lack full-rate hand evidence: unmatched intervals are preserved,
+but missing card/slot evidence cannot be reconstructed. New files also retain
+`empty_transitions` and `elixir_drops` for later relabeling.
+
+For the existing `last_20_percent` JSON, relabeling gives 8 usable plays instead
+of 3: 5 with known cells and 3 with ambiguous cells. Three duplicate detections
+are merged; three other candidate actions remain invalid. No new detections or
+card classes were invented. The repaired copy is in `offline_rl/trajectories_repaired`.
+
+Train a NEW run on the repaired directory (do not mix original and repaired
+copies of the same battle, and do not resume the old run on changed labels):
+
+```powershell
+python offline_rl/train.py offline_rl/trajectories_repaired --validation-fraction 0 --epochs 30 --output runs/offline_rl/repaired
+```
+
+This remains a one-battle smoke experiment, not proof of generalization. More
+reliable play examples and matching online/training history are still needed.
 
 ## PyTorch trajectory dataset
 
@@ -140,7 +184,10 @@ previous action becomes UNK with all card/coordinate fields cleared; its observe
 reward remains available independently. Targets contain `action_type` (0=noop,
 1=play), `card_id`, `card_slot` (0..3), `row` (0..31) and `column` (0..17).
 Unavailable or unsupervised targets are -100 for CrossEntropyLoss's ignore_index.
-Use `loss_mask` for play/noop and `play_loss_mask` for card/slot/coordinate heads.
+Use `loss_mask` for play/noop, `play_loss_mask` for card/slot, and
+`position_loss_mask` for row/column. A known play with ambiguous location retains
+card supervision but has row/column targets -100 and zero previous-coordinate
+tokens; zero means unknown here, not a real field cell.
 
 `attention_mask=True` means a real timestep. `padding_mask=True` and
 `causal_mask=True` mean blocked attention. After DataLoader collation, use
@@ -205,11 +252,12 @@ inputs. Unit ordering carries no positional meaning; their cells do.
 - `row_by_slot`: `[B,T,4,32]` and `column_by_slot`: `[B,T,4,18]`.
 
 Coordinate heads are conditioned on each hand slot. In the training loop,
-apply action-type cross entropy at `loss_mask`, and slot/coordinate cross entropy
-only at `play_loss_mask`. Select coordinate logits using the ground-truth slot:
+apply action-type cross entropy at `loss_mask`, slot cross entropy at
+`play_loss_mask`, and coordinate cross entropy at `position_loss_mask`.
+Select coordinate logits using the ground-truth slot:
 
 ```python
-play = batch["play_loss_mask"]
+play = batch["position_loss_mask"]
 if play.any():
     slots = batch["targets"]["card_slot"][play]
     rows = outputs["row_by_slot"][play].gather(
@@ -263,7 +311,8 @@ error if a split has no usable actions at all. Masked batches are skipped.
 
 Training uses AdamW (learning rate 0.0003, weight decay 0.01), gradient clipping
 at 1.0 and float32. It minimizes the sum of four mean cross-entropies: play/noop
-on `loss_mask`, slot and coordinates on `play_loss_mask`. Coordinates use the
+on `loss_mask`, slot on `play_loss_mask`, and coordinates on
+`position_loss_mask`. Coordinates use the
 target slot during training. Rewards are historical input features, not a
 return-maximization objective. `--play-weight 2` optionally increases the play
 class weight in the play/noop loss; the default is 1 (no reweighting).
@@ -278,7 +327,9 @@ Output files:
 
 Losses are aggregated by target counts, not by averaging unequal batch means.
 Metrics include play/noop accuracy, full-action accuracy, play precision/recall,
-and slot/card/cell/full-action accuracy on true plays. Coordinate metrics use
+and slot/card/cell/full-action accuracy on true plays. Cell/full-action metrics
+exclude plays whose position is unknown and report their denominator separately
+(`positions`, `complete_actions`). Coordinate metrics use
 the predicted slot, not the target slot. Metrics use raw greedy heads without
 game legality masks; missing-denominator metrics are JSON `null`, not zero.
 Check play-specific metrics: high overall accuracy can hide always choosing noop.
@@ -406,6 +457,60 @@ layout. `--field-layout layout.json` or constructor `field_layout=...` overrides
 it with 32 strings of 18 `.`/`#` cells. Use the same layout as training.
 Online features and offline training now share `ObservationEncoder` in
 `dataset.py`; regression tests compare tensors exactly, including rolling windows.
+
+## Video example with action recommendations
+
+`predict_video_actions.py` combines the existing `predict_video_kalman.py`
+perception pipeline and the trained policy. From `v2`:
+
+```powershell
+python predict_video_actions.py battle.mp4 --checkpoint runs/offline_rl/first/best.pt
+```
+
+Without arguments it uses `screenshots/input_omydays_cutted.mp4` and
+`runs/offline_rl/first/best.pt`. Detection/classification engines and crop settings
+remain those of `predict_video_kalman.py` / `model_paths.py`.
+The usual Tracking and Arena windows are shown. Tracking additionally displays
+`AI: WAIT` or the recommended card, hand slot, row and column; a recommended
+deployment cell is outlined in yellow on the video. Q exits. No clicks are sent.
+
+The default recognition rate is 30 frames/video-second and policy state rate is
+5 Hz (200 ms), as in the default trajectory builder. Use `--state-fps` and
+`--detection-fps` to match the settings used for training. Keep the original
+damage/reward settings too; optional `--damage-scale`, `--tower-reward` and
+`--max-hp-drop` mirror the trajectory builder. HP OCR runs synchronously so
+confirmed HP evidence follows the same timing as extraction.
+
+Actual play events are often confirmed late. The adapter rebuilds the bounded
+history from evidence already available, assigns a play to its original time,
+and never treats a recommendation as an executed action. Recent unconfirmed
+noops remain unknown for `--feedback-delay-ms 1000`. This is a conservative
+waiting heuristic, not a guarantee of perfect event recognition. Confirmed HP
+changes provide historical rewards; no win/loss outcome is guessed during video
+playback. One extra predecessor state is retained at the rolling-window boundary.
+
+Optional output and debug settings:
+
+```powershell
+python predict_video_actions.py battle.mp4 --checkpoint runs/offline_rl/first/best.pt --show-cards --output-video screenshots/policy_preview.mp4 --predictions policy_predictions.jsonl
+```
+
+Recording is opt-in, and existing output files are not overwritten. Additional
+options: `--show-battlefield`, `--headless`, `--max-seconds 10` for a short check,
+and `--no-tower-hp` to skip OCR (historical rewards then become unknown).
+`--device` selects the policy device only; perception retains its own device
+configuration. The preview processes video as fast as inference permits, not
+necessarily at real-time playback speed.
+
+Use `--card-costs costs.json` and optionally `--allowed-cells cells.json` for
+affordability and placement restrictions as described above. Without them the
+overlay explicitly shows that those checks are off. Default minimum hand-card
+confidence is 0.7 (`--min-card-confidence`). Recommendations alone are not proof
+that an action is legal, and this example has no automatic game controls.
+
+The only extension to the shared video loop is an optional `annotation_callback`
+called after recognition and before display/video writing. Existing callers of
+`run_video_prediction()` behave unchanged when it is omitted.
 
 ## How to train the bars detector
 

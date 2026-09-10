@@ -95,7 +95,7 @@ def to_device(value, device):
 def loss_components(outputs, batch, play_weight=1.0):
     """Differentiable sums and denominators; empty heads are omitted, not NaN.
 
-    CE(type) + CE(slot|play) + CE(row|target slot,play) + CE(col|target slot,play).
+    CE(type) + CE(slot|play) + CE(row/col|target slot,known position).
     Epoch reporting aggregates sums/counts, not averages of unequal batches.
     """
     valid = batch["loss_mask"] & batch["attention_mask"]
@@ -112,22 +112,26 @@ def loss_components(outputs, batch, play_weight=1.0):
         slots = target["card_slot"][play]
         count = slots.numel()
         result["card_slot"] = (F.cross_entropy(outputs["card_slot"][play], slots, reduction="sum"), count)
+    position = batch.get("position_loss_mask", play) & play
+    if position.any():
+        slots = target["card_slot"][position]
+        count = slots.numel()
         indices = torch.arange(count, device=slots.device)
         for name in ("row", "column"):
-            logits = outputs[name + "_by_slot"][play][indices, slots]
-            result[name] = (F.cross_entropy(logits, target[name][play], reduction="sum"), count)
+            logits = outputs[name + "_by_slot"][position][indices, slots]
+            result[name] = (F.cross_entropy(logits, target[name][position], reduction="sum"), count)
     return result
 
 
 class EpochMetrics:
     """Raw, unmasked greedy heads, without game legality rules.
 
-    Play slot/card/cell metrics are conditional on a true play but use the
-    PREDICTED slot for coordinates; full_action additionally requires play/noop.
+    Play slot/card metrics cover all labeled plays. Cell/full-action metrics
+    exclude unknown positions and use the PREDICTED slot, not teacher forcing.
     """
     def __init__(self):
         self.sums, self.denominators = {}, {}
-        self.counts = dict(actions=0, plays=0, predicted_plays=0, true_positive_plays=0,
+        self.counts = dict(actions=0, plays=0, positions=0, complete_actions=0, predicted_plays=0, true_positive_plays=0,
                            correct_type=0, correct_slot=0, correct_card=0, correct_cell=0,
                            correct_play=0, correct_full=0)
         self.skipped_batches = 0
@@ -147,6 +151,7 @@ class EpochMetrics:
         self.counts["true_positive_plays"] += (is_play & predicted_play).sum().item()
         self.counts["correct_type"] += (expected_type == predicted_type).sum().item()
         self.counts["correct_full"] += ((~is_play) & (~predicted_play)).sum().item()
+        self.counts["complete_actions"] += (~is_play).sum().item()
         play = batch["play_loss_mask"] & mask & (target["action_type"] == 1)
         count = play.sum().item()
         self.counts["plays"] += count
@@ -156,12 +161,22 @@ class EpochMetrics:
         indices = torch.arange(count, device=slots.device)
         slot_ok = slots == target["card_slot"][play]
         card_ok = batch["states"]["hand_ids"][play][indices, slots] == target["card_id"][play]
-        row = outputs["row_by_slot"][play][indices, slots].argmax(-1)
-        column = outputs["column_by_slot"][play][indices, slots].argmax(-1)
-        cell_ok = (row == target["row"][play]) & (column == target["column"][play])
-        full = slot_ok & cell_ok & (outputs["action_type"][play].argmax(-1) == 1)
-        for key, value in (("correct_slot", slot_ok), ("correct_card", card_ok),
-                           ("correct_cell", cell_ok), ("correct_play", full), ("correct_full", full)):
+        self.counts["correct_slot"] += slot_ok.sum().item()
+        self.counts["correct_card"] += card_ok.sum().item()
+        position = batch.get("position_loss_mask", play) & play
+        count = position.sum().item()
+        self.counts["positions"] += count
+        self.counts["complete_actions"] += count
+        if not count:
+            return
+        slots = outputs["card_slot"][position].argmax(-1)
+        indices = torch.arange(count, device=slots.device)
+        slot_ok = slots == target["card_slot"][position]
+        row = outputs["row_by_slot"][position][indices, slots].argmax(-1)
+        column = outputs["column_by_slot"][position][indices, slots].argmax(-1)
+        cell_ok = (row == target["row"][position]) & (column == target["column"][position])
+        full = slot_ok & cell_ok & (outputs["action_type"][position].argmax(-1) == 1)
+        for key, value in (("correct_cell", cell_ok), ("correct_play", full), ("correct_full", full)):
             self.counts[key] += value.sum().item()
 
     def summary(self):
@@ -171,14 +186,15 @@ class EpochMetrics:
             return c[numerator] / c[denominator] if c[denominator] else None
         return {"loss": sum(losses.values()) if losses else None, "losses": losses,
                 "actions": c["actions"], "plays": c["plays"], "skipped_batches": self.skipped_batches,
+                "positions": c["positions"], "complete_actions": c["complete_actions"],
                 "action_type_accuracy": ratio("correct_type", "actions"),
-                "full_action_accuracy": ratio("correct_full", "actions"),
+                "full_action_accuracy": ratio("correct_full", "complete_actions"),
                 "play_precision": ratio("true_positive_plays", "predicted_plays"),
                 "play_recall": ratio("true_positive_plays", "plays"),
                 "play_slot_accuracy": ratio("correct_slot", "plays"),
                 "play_card_accuracy": ratio("correct_card", "plays"),
-                "play_cell_accuracy": ratio("correct_cell", "plays"),
-                "play_full_accuracy": ratio("correct_play", "plays")}
+                "play_cell_accuracy": ratio("correct_cell", "positions"),
+                "play_full_accuracy": ratio("correct_play", "positions")}
 
 
 def run_epoch(model, loader, device, config, *, optimizer=None, log_every=50):
@@ -401,7 +417,7 @@ def train(args) -> Path:
         atomic_save(output / "history.json", history, json_format=True)
         val_text = f" val_loss={validation['loss']:.4f}" if validation is not None else ""
         print(f"Epoch {epoch}/{args.epochs}: train_loss={training['loss']:.4f}{val_text} "
-              f"full_acc={monitored['full_action_accuracy']:.3f} "
+              f"full_acc={monitored['full_action_accuracy']} "
               f"plays={monitored['plays']} play_full_acc={monitored['play_full_accuracy']} "
               f"best_epoch={best_epoch} ({record['seconds']:.1f}s)", flush=True)
         if epoch == start_epoch and not training["plays"]:

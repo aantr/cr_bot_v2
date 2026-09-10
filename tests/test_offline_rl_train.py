@@ -88,6 +88,34 @@ class TrainTests(unittest.TestCase):
         self.assertEqual(summary["play_cell_accuracy"], 0)
         self.assertEqual(summary["full_action_accuracy"], 0)
 
+    def test_partial_play_supervises_card_not_uncertain_coordinates(self):
+        raw = battle()
+        raw["transitions"][1]["action"]["position_valid"] = False
+        path = self.data / "partial.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        dataset = TrajectoryDataset(path, sequence_length=4, max_units=3)
+        batch = default_collate([dataset[1]])
+        self.assertTrue(batch["play_loss_mask"][0, 1])
+        self.assertFalse(batch["position_loss_mask"].any())
+        self.assertEqual(batch["targets"]["row"][0, 1], -100)
+        self.assertEqual(dataset[2]["previous_actions"][2, 3:].tolist(), [0, 0])
+        model = StARformer(StARformerConfig.from_encoding_config(
+            dataset.encoding_config(), d_model=16, n_heads=2, temporal_layers=1))
+        output = model(batch)
+        parts = loss_components(output, batch)
+        self.assertEqual(set(parts), {"action_type", "card_slot"})
+        sum(value / count for value, count in parts.values()).backward()
+        self.assertIsNone(model.row_head.weight.grad)
+        self.assertIsNone(model.column_head.weight.grad)
+        self.assertGreater(model.slot_head.weight.grad.abs().sum().item(), 0)
+        metrics = EpochMetrics()
+        metrics.update(output, batch, parts)
+        summary = metrics.summary()
+        self.assertEqual(summary["plays"], 1)
+        self.assertEqual(summary["positions"], 0)
+        self.assertIsNone(summary["full_action_accuracy"])
+        self.assertIsNone(summary["play_cell_accuracy"])
+
     def test_empty_batches_skipped_and_empty_split_rejected(self):
         dataset = TrajectoryDataset(self.data / "a.json", sequence_length=4, max_units=3)
         model = StARformer(StARformerConfig.from_encoding_config(

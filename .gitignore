@@ -8,3 +8,4 @@ generation
 generation_elixir
 venv
 /offline_rl/trajectories/
+/offline_rl/trajectories_repaired/

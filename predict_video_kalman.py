@@ -48,7 +48,7 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots/input_omydays_cutted.mp4"
+INPUT_VIDEO = SCRIPT_DIR / "screenshots/last_20_percent.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
@@ -1478,12 +1478,14 @@ def run_video_prediction(
     input_video=INPUT_VIDEO, output_video=OUTPUT_VIDEO, *,
     process_fps_limit=FPS_PROCESS, display=True, write_video=True,
     observation_callback=None, hp_enabled=TOWER_HP_ENABLED, synchronous_hp=False,
-    write_logs=True,
+    write_logs=True, annotation_callback=None,
 ):
     """Run shared perception; the callback receives causal per-frame observations.
 
     Offline callers use display=False, write_video=False, write_logs=False and
     synchronous_hp=True. Importing this module does not open videos or models.
+    annotation_callback(output_frame, frame_data) may draw recommendations in
+    place after perception, before display/video writing; it never sees raw crops.
     """
     INPUT_VIDEO = Path(input_video)
     OUTPUT_VIDEO = Path(output_video)
@@ -2279,6 +2281,8 @@ def run_video_prediction(
 
             if observation_callback is not None:
                 observation_callback(frame_data)
+            if annotation_callback is not None:
+                annotation_callback(output_frame, frame_data)
             if display:
                 # Показываем номер кадра
                 cv2.putText(

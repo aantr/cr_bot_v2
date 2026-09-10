@@ -168,6 +168,245 @@ which returns `val_dataset=None`. Save `encoding_config()` with checkpoints;
 restore vocabularies via `Vocabulary.from_dict(...)` and normalization via
 `Normalization(**...)` for subsequent datasets and inference.
 
+## StARformer imitation policy
+
+`offline_rl/starformer.py` implements a project-specific StARformer-inspired
+local-then-temporal policy, not a reproduction of the original architecture or
+a loader for its pretrained weights. This first version learns imitation;
+it does not optimize returns or consume return-to-go. `train.py` trains this
+policy; `predict_action.py` loads its checkpoints and maintains observed battle
+history for recommendations. Neither module executes actions in the game.
+
+Example from `v2`, using the `dataset` and `batch` created above:
+
+```python
+from offline_rl.starformer import StARformer, StARformerConfig
+
+config = StARformerConfig.from_encoding_config(dataset.encoding_config())
+model = StARformer(config)  # Random weights until trained or restored.
+outputs = model(batch)
+model.eval()
+recommendation = model.predict(batch)  # Last REAL step, not the padded last index.
+```
+
+Move all input tensors recursively to the same device as the model for GPU use.
+Defaults: width 128, 4 attention heads, 1 local layer, 3 temporal layers,
+dropout 0.1, and context length from the dataset. Local attention combines 48
+field patch tokens, masked individual units, four hand slots, tower HP, elixir,
+time, previous executed action and previous observed reward. Temporal attention
+is causal; the model constructs its own mask and requires nonempty right-padded
+sequences. Targets, current rewards, future returns and terminal flags are not
+inputs. Unit ordering carries no positional meaning; their cells do.
+
+`forward()` returns raw logits, with zero logits at padded timesteps:
+
+- `action_type`: `[B,T,2]`, 0=noop, 1=play.
+- `card_slot`: `[B,T,4]`, zero-based hand position (not a vocabulary class).
+- `row_by_slot`: `[B,T,4,32]` and `column_by_slot`: `[B,T,4,18]`.
+
+Coordinate heads are conditioned on each hand slot. In the training loop,
+apply action-type cross entropy at `loss_mask`, and slot/coordinate cross entropy
+only at `play_loss_mask`. Select coordinate logits using the ground-truth slot:
+
+```python
+play = batch["play_loss_mask"]
+if play.any():
+    slots = batch["targets"]["card_slot"][play]
+    rows = outputs["row_by_slot"][play].gather(
+        1, slots[:, None, None].expand(-1, 1, 32)
+    ).squeeze(1)
+    # cross_entropy(rows, batch["targets"]["row"][play]); similarly for columns.
+```
+
+Skip loss components with no valid targets. `card_id` is obtained from the
+selected hand slot, so there is no separate card-class loss. Save
+`model.state_dict()`, `config.to_dict()` and `dataset.encoding_config()` together
+in every checkpoint; reconstruct with `StARformerConfig(**saved_config)`.
+
+`model.eval(); model.predict(batch)` selects play/noop, then the slot, then the
+highest-scoring permitted cell for that slot. It returns one tensor per field
+(`action_type`, `card_slot`, `card_id`, `row`, `column`) of shape `[B]`.
+Slots and cells are zero-based, and all non-type fields are -1 for noop.
+The decoder excludes empty/unknown cards and falls back to noop when no play is
+allowed. Optional boolean `allowed_slots[B,4]` and
+`allowed_cells[B,4,32,18]` masks support card costs and placement restrictions;
+the caller must compute these rules. Without those masks, known nonempty slots
+and every field cell are eligible. `#` cells are not automatically forbidden.
+This helper does not manage live history or execute actions in the game.
+
+Run dataset and model tests from the project root:
+
+```powershell
+.\v2\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_offline_rl_*.py" -v
+```
+
+## Train the imitation policy
+
+Pass JSON trajectories, not raw videos. From `v2`, with at least two battles:
+
+```powershell
+python offline_rl/train.py offline_rl/trajectories --epochs 30 --batch-size 4 --device auto --output runs/offline_rl/first
+```
+
+The default split holds out 20% of battle identities (at least one). Copies of
+the same battle stay together, and vocabularies are fitted only on training
+files. With just one battle, explicitly disable validation:
+
+```powershell
+python offline_rl/train.py offline_rl/trajectories --validation-fraction 0 --epochs 10 --output runs/offline_rl/smoke
+```
+
+This second mode tests the pipeline but gives no held-out quality estimate.
+`best.pt` then uses training loss and early stopping is disabled. The program
+warns if train/validation contains no usable play labels, and stops with an
+error if a split has no usable actions at all. Masked batches are skipped.
+
+Training uses AdamW (learning rate 0.0003, weight decay 0.01), gradient clipping
+at 1.0 and float32. It minimizes the sum of four mean cross-entropies: play/noop
+on `loss_mask`, slot and coordinates on `play_loss_mask`. Coordinates use the
+target slot during training. Rewards are historical input features, not a
+return-maximization objective. `--play-weight 2` optionally increases the play
+class weight in the play/noop loss; the default is 1 (no reweighting).
+
+Output files:
+
+- `best.pt`: lowest validation loss (or training loss without validation).
+- `last.pt`: latest completed epoch, including optimizer, RNG/shuffle state,
+  model configuration, dataset vocabulary/normalization, training options and
+  original split with trajectory content hashes.
+- `history.json`: per-epoch losses, action counts, skipped batches and metrics.
+
+Losses are aggregated by target counts, not by averaging unequal batch means.
+Metrics include play/noop accuracy, full-action accuracy, play precision/recall,
+and slot/card/cell/full-action accuracy on true plays. Coordinate metrics use
+the predicted slot, not the target slot. Metrics use raw greedy heads without
+game legality masks; missing-denominator metrics are JSON `null`, not zero.
+Check play-specific metrics: high overall accuracy can hide always choosing noop.
+
+By default early stopping uses 10 validation epochs without improvement;
+`--patience 0` disables it. `--min-delta` sets the minimum improvement needed to
+reset patience, while `best.pt` always retains the actual lowest loss.
+
+Resume in the same run directory:
+
+```powershell
+python offline_rl/train.py --resume runs/offline_rl/first/last.pt --epochs 60 --device auto
+```
+
+`--epochs 60` means 60 total epochs, not 60 more. Configuration, split,
+optimizer and random states are restored; changed/missing trajectory files or
+conflicting training options are rejected. A checkpoint that already reached
+early stopping is not restarted. Start a new run to change the dataset or
+hyperparameters. A fresh run refuses a nonempty output directory. Omitting
+`--output` creates a timestamped directory under `v2/runs/offline_rl`.
+Seeded runs and RNG restoration support reproducibility on the same backend;
+different hardware/backends need not be bit-identical.
+
+Use `--device cpu`, `--device cuda:0` (or `--device 0`) to choose a device.
+Default `auto` selects CUDA when available. `--num-workers 0` is the Windows-safe
+default; `--num-threads 2` can limit CPU threads. To reduce memory use, lower
+`--batch-size`, `--sequence-length` or model width (`--d-model`, divisible by
+`--n-heads`). `--max-units` must still accommodate every recognized unit.
+Use `python offline_rl/train.py --help` for all settings.
+
+## Predict actions from recognized states
+
+`offline_rl/predict_action.py` loads `best.pt` or `last.pt` without needing the
+original training files. It restores the saved model, vocabulary, normalization
+and context length. It does not recognize video itself or click in the game.
+
+From `v2`, inspect recommendations along an existing battle:
+
+```powershell
+python offline_rl/predict_action.py runs/offline_rl/first/best.pt --replay offline_rl/trajectories/last_20_percent-fe680f8c497c.json --limit 10 --device auto
+```
+
+Replay uses each recorded state and only the ACTUAL preceding action/reward.
+It never feeds its own recommendations back as executed actions and skips the
+terminal observation. This is not a simulated rollout or a win-rate evaluation.
+Remove `--limit` to process every decision step. Output is JSONL on stdout;
+`--output predictions.jsonl` creates a new file and refuses to overwrite one.
+
+Use the Python API inside the recognition loop:
+
+```python
+from offline_rl.predict_action import ActionPredictor
+
+predictor = ActionPredictor("runs/offline_rl/first/best.pt", device="auto")
+predictor.reset("battle-001")
+predictor.observe(first_observation)  # No previous transition at battle start.
+recommendation = predictor.predict()
+
+# At the next sampled state, report what ACTUALLY happened since the last state.
+predictor.observe(next_observation, previous_action={"type": "noop"}, previous_reward=0.0)
+recommendation = predictor.predict()
+```
+
+Observations have the same structure as trajectory `observations[]` / the
+return value of `build_trajectories.make_observation`: `timestamp_ms`, `units`,
+four `hand` entries, `elixir` and `tower_hp`, plus optional game time and phase.
+Do not pass an image or the raw recognition callback dictionary (`elixir_bar`
+there must first become observation `elixir`). Use milliseconds since battle
+start, strictly increasing, and the same sampling cadence as training (normally
+about 200 ms). Call `reset()` before every new battle; history is bounded by the
+checkpoint context length and preserves preceding actions at the window edge.
+
+An actual play is `{"type":"play", "card":"knight", "slot":1, "row":16,
+"column":9}` with an optional actual `timestamp_ms` in the preceding interval.
+Slots, rows and columns in this public API are **one-based**, matching trajectory
+JSONs. The played card must match the preceding hand. Omitted previous action or
+`previous_action_valid=False` encodes unknown, not noop. Omitted previous reward
+is masked as unavailable, not treated as a measured zero. Supply measured rewards
+with the same formula used to build trajectories when available.
+`predict()` never changes history; `observe()` is the only append operation.
+
+A recommendation contains `type` (`noop` or `play`), `slot`, `card`, `row`,
+`column`, `index_base=1`, observation timestamp, history length, reason,
+constraint status and confidence scores. Noop's card/slot/coordinates are null.
+The timestamp is the observation time, not evidence that a play occurred.
+
+Empty/unknown hand slots are always excluded. Optional controls:
+
+- `--min-card-confidence 0.7` / constructor `min_card_confidence=0.7` masks
+  low-confidence hand recognition.
+- `--card-costs costs.json` / constructor `card_costs={"knight":3,"arrows":3}`
+  enables elixir affordability checks. With costs enabled, missing cost or
+  unknown elixir blocks that slot. Include every card that may be selected.
+- `predict(slot_costs=[3, 4, None, 2])` supplies current dynamic costs and
+  overrides the static cost table; None blocks a slot.
+- `predict(allowed_slots=[True, False, True, True])` applies additional slot
+  restrictions. `allowed_cells` is a boolean `[32,18]` mask or a separate
+  `[4,32,18]` mask for each hand slot. True means allowed. Python mask arrays
+  are indexed from zero even though returned coordinates are one-based.
+
+No card prices or deployment rules are guessed. Without costs,
+`constraints.elixir_checked` is false; without cell masks every field cell is
+eligible, including `#`. The caller supplies placement restrictions, cooldowns
+and any additional rules. If all plays are blocked, the result is noop.
+Softmax confidence is not a calibrated chance of success: action-type confidence
+is raw; slot and cell scores are normalized over allowed choices, and row/column
+scores are marginals of that cell distribution. A forced noop can therefore
+have low raw noop confidence.
+
+For another process, stream one JSON object per line:
+
+```powershell
+python offline_rl/predict_action.py runs/offline_rl/first/best.pt --input states.jsonl
+```
+
+Each request is `{"observation": {...}, "previous_action": {...},
+"previous_reward": 0.0}`; omit feedback for the first state. Optional keys are
+`previous_action_valid`, `allowed_slots`, `allowed_cells`, `slot_costs`.
+`--input -` reads stdin. Send `{"reset":true,"battle_id":"battle-002"}` between
+battles (it returns a reset acknowledgment). Invalid input stops with its line
+number rather than silently breaking action/state alignment.
+
+The default field layout comes from `field.py`; replay uses the trajectory's
+layout. `--field-layout layout.json` or constructor `field_layout=...` overrides
+it with 32 strings of 18 `.`/`#` cells. Use the same layout as training.
+Online features and offline training now share `ObservationEncoder` in
+`dataset.py`; regression tests compare tensors exactly, including rolling windows.
+
 ## How to train the bars detector
 
 Make sure `dataset` contains images, before running export_tensor_rt.py edit model_paths.py, then run from `v2`:

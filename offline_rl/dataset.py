@@ -76,6 +76,41 @@ def _boolean(value, where: str) -> None:
         raise ValueError(f"{where}: expected true or false")
 
 
+def validate_observation(state: dict) -> None:
+    """Validate one recognized state without requiring future observations."""
+    timestamp = _number(state["timestamp_ms"], "timestamp_ms", 0)
+    hand = state["hand"]
+    if len(hand) != 4 or sorted(item["slot"] for item in hand) != [1, 2, 3, 4]:
+        raise ValueError("Expected four unique hand slots 1..4")
+    for card in hand:
+        _integer(card["slot"], "hand slot", 1, 4)
+        label(card["card"])
+        _number(card["confidence"], "hand confidence", 0, 1)
+    for unit in state["units"]:
+        label(unit["unit"])
+        _integer(unit["row"], "unit row", 1, 32)
+        _integer(unit["column"], "unit column", 1, 18)
+        if unit["side"] not in SIDE_IDS:
+            raise ValueError(f"Unknown unit side: {unit['side']}")
+        _number(unit["unit_confidence"], "unit confidence", 0, 1)
+        _number(unit["detector_confidence"], "detector confidence", 0, 1)
+        _boolean(unit["predicted_by_kalman"], "predicted_by_kalman")
+    elixir = state["elixir"].get("value")
+    if elixir is not None:
+        _number(elixir, "elixir", 0, 10)
+    if state.get("game_time_remaining_seconds") is not None:
+        _number(state["game_time_remaining_seconds"], "remaining time", 0)
+    for tower in TOWERS:
+        hp = state["tower_hp"].get(tower, {})
+        if hp.get("hp") is not None:
+            _number(hp["hp"], f"{tower} HP", 0)
+            _number(hp.get("confidence", 0), f"{tower} confidence", 0, 1)
+            _boolean(hp.get("stale", True), f"{tower} stale")
+            for key in ("confirmed_at_ms", "observed_at_ms", "last_seen_at_ms"):
+                if hp.get(key) is not None:
+                    _number(hp[key], f"{tower} {key}", 0, timestamp)
+
+
 def validate_trajectory(data: dict) -> None:
     """Fail on structural errors instead of silently shifting state/action labels."""
     if data["schema_version"] != 1:
@@ -97,36 +132,7 @@ def validate_trajectory(data: dict) -> None:
         if timestamp <= last_time:
             raise ValueError("Observation timestamps must be strictly increasing")
         last_time = timestamp
-        hand = state["hand"]
-        if len(hand) != 4 or sorted(item["slot"] for item in hand) != [1, 2, 3, 4]:
-            raise ValueError(f"state {index}: expected four unique hand slots 1..4")
-        for card in hand:
-            _integer(card["slot"], "hand slot", 1, 4)
-            label(card["card"])
-            _number(card["confidence"], "hand confidence", 0, 1)
-        for unit in state["units"]:
-            label(unit["unit"])
-            _integer(unit["row"], "unit row", 1, 32)
-            _integer(unit["column"], "unit column", 1, 18)
-            if unit["side"] not in SIDE_IDS:
-                raise ValueError(f"Unknown unit side: {unit['side']}")
-            _number(unit["unit_confidence"], "unit confidence", 0, 1)
-            _number(unit["detector_confidence"], "detector confidence", 0, 1)
-            _boolean(unit["predicted_by_kalman"], "predicted_by_kalman")
-        elixir = state["elixir"].get("value")
-        if elixir is not None:
-            _number(elixir, "elixir", 0, 10)
-        if state.get("game_time_remaining_seconds") is not None:
-            _number(state["game_time_remaining_seconds"], "remaining time", 0)
-        for tower in TOWERS:
-            hp = state["tower_hp"].get(tower, {})
-            if hp.get("hp") is not None:
-                _number(hp["hp"], f"{tower} HP", 0)
-                _number(hp.get("confidence", 0), f"{tower} confidence", 0, 1)
-                _boolean(hp.get("stale", True), f"{tower} stale")
-                for key in ("confirmed_at_ms", "observed_at_ms", "last_seen_at_ms"):
-                    if hp.get(key) is not None:
-                        _number(hp[key], f"{tower} {key}", 0, timestamp)
+        validate_observation(state)
     for index, transition in enumerate(transitions):
         if (transition["state_index"], transition["next_state_index"]) != (index, index + 1):
             raise ValueError(f"transition {index}: indices must reference adjacent observations")
@@ -236,68 +242,20 @@ class Normalization:
                 raise ValueError(f"Normalization.{name} must be finite and positive")
 
 
-class TrajectoryDataset(Dataset):
-    """One causal window per ending transition (stride=1), right padding to T.
+class ObservationEncoder:
+    """Shared offline/live feature encoding; never needs the next observation.
 
-    states.grid_counts: [T,3,32,18], channels ally/enemy/unknown.
-    states.unit_ids/sides/mask: [T,M]; cells: [T,M,2] (0-based row,column);
-      features: [T,M,3] (class confidence, detector confidence, Kalman flag).
-    states.hand_ids/confidence/known_mask/nonempty_mask: [T,4].
-    states.elixir/elixir_mask: [T,1]; tower_hp/masks/confidence/age: [T,4].
-    states.time_features: [T,3] (elapsed/scale, previous dt seconds, remaining/scale).
-    terrain_mask: [1,32,18]; '#' is terrain information, NOT an action restriction.
-    previous_actions: [T,5] (type,card-ID,slot,row,column). Type IDs are PREV_*;
-      previous coordinates/slots retain 1-based values with 0 for absent fields.
-    targets: type 0=noop/1=play, card-ID, slot 0..3, row 0..31, column 0..17;
-      unavailable targets use IGNORE_INDEX=-100, suitable for CrossEntropyLoss.
-    All sample tensors are CPU tensors and support default DataLoader collation.
+    previous_transitions[t] describes the ACTUAL transition into observation t;
+    None means episode start. A reward of None means unavailable, not zero.
+    Source coordinates are 1-based, exactly as in build_trajectories.py.
+    Training-only fields are initialized empty and populated by the dataset.
     """
 
-    def __init__(
-        self, source, sequence_length: int = 32, *, vocabulary: Vocabulary | None = None,
-        normalization: Normalization | None = None, max_units: int = 128,
-        stride: int = 1, supervise: str = "last",
-    ):
-        for name, value in (("sequence_length", sequence_length), ("max_units", max_units),
-                            ("stride", stride)):
-            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-                raise ValueError(f"{name} must be a positive integer")
-        if supervise not in {"last", "all"}:
-            raise ValueError("supervise must be 'last' or 'all'")
-        self.files = discover_trajectory_files(source)
-        self.trajectories = [load_trajectory(path) for path in self.files]
-        self.vocabulary = vocabulary or Vocabulary.from_trajectories(self.trajectories)
-        self.normalization = normalization or Normalization()
-        self.card_to_id = {name: i for i, name in enumerate(self.vocabulary.cards)}
-        self.unit_to_id = {name: i for i, name in enumerate(self.vocabulary.units)}
+    def __init__(self, vocabulary, normalization, sequence_length=32, max_units=128):
+        self.vocabulary, self.normalization = vocabulary, normalization
         self.sequence_length, self.max_units = sequence_length, max_units
-        self.stride, self.supervise = stride, supervise
-        self.battle_ids = [battle_identity(data) for data in self.trajectories]
-        self._ends, self._cumulative = [], [0]
-        for path, data in zip(self.files, self.trajectories):
-            largest = max(len(state["units"]) for state in data["observations"])
-            if largest > max_units:
-                raise ValueError(f"{path}: {largest} units exceed max_units={max_units}; "
-                                 "increase max_units (units are never silently dropped)")
-            count = len(data["transitions"])
-            ends = list(range(0, count, stride))
-            if ends[-1] != count - 1:
-                ends.append(count - 1)
-            self._ends.append(ends)
-            self._cumulative.append(self._cumulative[-1] + len(ends))
-
-    def __len__(self) -> int:
-        return self._cumulative[-1]
-
-    def encoding_config(self) -> dict:
-        """Store this in a checkpoint for identical feature/ID mapping at inference."""
-        return {
-            "encoding_version": 1, "vocabulary": self.vocabulary.to_dict(),
-            "normalization": asdict(self.normalization), "max_units": self.max_units,
-            "sequence_length": self.sequence_length, "stride": self.stride,
-            "supervise": self.supervise, "grid_sides": list(GRID_SIDES),
-            "tower_order": list(TOWERS), "phases": list(PHASES),
-        }
+        self.card_to_id = {name: i for i, name in enumerate(vocabulary.cards)}
+        self.unit_to_id = {name: i for i, name in enumerate(vocabulary.units)}
 
     def _action(self, transition: dict) -> tuple[list[int], bool]:
         if not transition["action_valid"]:
@@ -310,17 +268,16 @@ class TrajectoryDataset(Dataset):
             return [PREV_UNKNOWN, 0, 0, 0, 0], False
         return [PREV_PLAY, card_id, action["slot"], action["row"], action["column"]], True
 
-    def __getitem__(self, index: int) -> dict:
-        if index < 0:
-            index += len(self)
-        if not 0 <= index < len(self):
-            raise IndexError(index)
-        battle = bisect_right(self._cumulative, index) - 1
-        end = self._ends[battle][index - self._cumulative[battle]]
-        start = max(0, end + 1 - self.sequence_length)
-        data = self.trajectories[battle]
-        observations, transitions = data["observations"], data["transitions"]
-        length = end - start + 1
+    def encode(self, observations, previous_transitions, previous_timestamps,
+               step_indices, field_layout, battle_id="live"):
+        length = len(observations)
+        if not 1 <= length <= self.sequence_length:
+            raise ValueError("Observation window must have 1..sequence_length states")
+        if any(len(items) != length for items in
+               (previous_transitions, previous_timestamps, step_indices)):
+            raise ValueError("Previous transition/time/step arrays must match observations")
+        if any(len(state["units"]) > self.max_units for state in observations):
+            raise ValueError("Observed units exceed checkpoint max_units; units are never dropped")
         T, M = self.sequence_length, self.max_units
         norm = self.normalization
         states = {
@@ -348,7 +305,7 @@ class TrajectoryDataset(Dataset):
         sample = {
             "states": states,
             "terrain_mask": torch.tensor(
-                [[cell == "#" for cell in row] for row in data["metadata"]["field_layout"]],
+                [[cell == "#" for cell in row] for row in field_layout],
                 dtype=torch.bool,
             ).unsqueeze(0),
             "previous_actions": torch.zeros(T, 5, dtype=torch.long),
@@ -367,14 +324,14 @@ class TrajectoryDataset(Dataset):
             "causal_mask": torch.ones(T, T, dtype=torch.bool).triu(1),
             "step_indices": torch.full((T,), -1, dtype=torch.long),
             "sequence_length": torch.tensor(length, dtype=torch.long),
-            "battle_id": self.battle_ids[battle],
+            "battle_id": battle_id,
         }
         sample["padding_mask"] = ~sample["attention_mask"]
-        for t, step in enumerate(range(start, end + 1)):
-            state, transition = observations[step], transitions[step]
+        for t, state in enumerate(observations):
+            step = step_indices[t]
             sample["step_indices"][t] = step
             timestamp = state["timestamp_ms"]
-            previous_time = observations[step - 1]["timestamp_ms"] if step else timestamp
+            previous_time = previous_timestamps[t]
             states["time_features"][t, 0] = timestamp / 1000 / norm.time_seconds
             states["time_features"][t, 1] = (timestamp - previous_time) / 1000
             remaining = state.get("game_time_remaining_seconds")
@@ -423,15 +380,105 @@ class TrajectoryDataset(Dataset):
                     )
             # Shift BEFORE slicing: the first step of an interior window still
             # receives the preceding transition from this same battle.
-            if step == 0:
+            if previous_transitions[t] is None:
                 sample["previous_actions"][t, 0] = PREV_BOS
             else:
-                previous, known = self._action(transitions[step - 1])
+                previous, known = self._action(previous_transitions[t])
                 sample["previous_actions"][t] = torch.tensor(previous)
                 sample["previous_action_valid"][t] = known
-                sample["previous_rewards"][t, 0] = transitions[step - 1]["reward"] / norm.reward
-                sample["previous_reward_mask"][t] = True
-            action, valid = self._action(transition)
+                reward = previous_transitions[t].get("reward")
+                if reward is not None:
+                    sample["previous_rewards"][t, 0] = reward / norm.reward
+                    sample["previous_reward_mask"][t] = True
+        return sample
+
+
+class TrajectoryDataset(Dataset):
+    """One causal window per ending transition (stride=1), right padding to T.
+
+    states.grid_counts: [T,3,32,18], channels ally/enemy/unknown.
+    states.unit_ids/sides/mask: [T,M]; cells: [T,M,2] (0-based row,column);
+      features: [T,M,3] (class confidence, detector confidence, Kalman flag).
+    states.hand_ids/confidence/known_mask/nonempty_mask: [T,4].
+    states.elixir/elixir_mask: [T,1]; tower_hp/masks/confidence/age: [T,4].
+    states.time_features: [T,3] (elapsed/scale, previous dt seconds, remaining/scale).
+    terrain_mask: [1,32,18]; '#' is terrain information, NOT an action restriction.
+    previous_actions: [T,5] (type,card-ID,slot,row,column). Type IDs are PREV_*;
+      previous coordinates/slots retain 1-based values with 0 for absent fields.
+    targets: type 0=noop/1=play, card-ID, slot 0..3, row 0..31, column 0..17;
+      unavailable targets use IGNORE_INDEX=-100, suitable for CrossEntropyLoss.
+    All sample tensors are CPU tensors and support default DataLoader collation.
+    """
+
+    def __init__(
+        self, source, sequence_length: int = 32, *, vocabulary: Vocabulary | None = None,
+        normalization: Normalization | None = None, max_units: int = 128,
+        stride: int = 1, supervise: str = "last",
+    ):
+        for name, value in (("sequence_length", sequence_length), ("max_units", max_units),
+                            ("stride", stride)):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if supervise not in {"last", "all"}:
+            raise ValueError("supervise must be 'last' or 'all'")
+        self.files = discover_trajectory_files(source)
+        self.trajectories = [load_trajectory(path) for path in self.files]
+        self.vocabulary = vocabulary or Vocabulary.from_trajectories(self.trajectories)
+        self.normalization = normalization or Normalization()
+        self.card_to_id = {name: i for i, name in enumerate(self.vocabulary.cards)}
+        self.unit_to_id = {name: i for i, name in enumerate(self.vocabulary.units)}
+        self.sequence_length, self.max_units = sequence_length, max_units
+        self.stride, self.supervise = stride, supervise
+        self.encoder = ObservationEncoder(self.vocabulary, self.normalization, sequence_length, max_units)
+        self.battle_ids = [battle_identity(data) for data in self.trajectories]
+        self._ends, self._cumulative = [], [0]
+        for path, data in zip(self.files, self.trajectories):
+            largest = max(len(state["units"]) for state in data["observations"])
+            if largest > max_units:
+                raise ValueError(f"{path}: {largest} units exceed max_units={max_units}; "
+                                 "increase max_units (units are never silently dropped)")
+            count = len(data["transitions"])
+            ends = list(range(0, count, stride))
+            if ends[-1] != count - 1:
+                ends.append(count - 1)
+            self._ends.append(ends)
+            self._cumulative.append(self._cumulative[-1] + len(ends))
+
+    def __len__(self) -> int:
+        return self._cumulative[-1]
+
+    def encoding_config(self) -> dict:
+        """Store this in a checkpoint for identical feature/ID mapping at inference."""
+        return {
+            "encoding_version": 1, "vocabulary": self.vocabulary.to_dict(),
+            "normalization": asdict(self.normalization), "max_units": self.max_units,
+            "sequence_length": self.sequence_length, "stride": self.stride,
+            "supervise": self.supervise, "grid_sides": list(GRID_SIDES),
+            "tower_order": list(TOWERS), "phases": list(PHASES),
+        }
+
+    def __getitem__(self, index: int) -> dict:
+        if index < 0:
+            index += len(self)
+        if not 0 <= index < len(self):
+            raise IndexError(index)
+        battle = bisect_right(self._cumulative, index) - 1
+        end = self._ends[battle][index - self._cumulative[battle]]
+        start = max(0, end + 1 - self.sequence_length)
+        data = self.trajectories[battle]
+        observations, transitions = data["observations"], data["transitions"]
+        length = end - start + 1
+        sample = self.encoder.encode(
+            observations[start:end + 1],
+            [transitions[i - 1] if i else None for i in range(start, end + 1)],
+            [observations[i - 1]["timestamp_ms"] if i else observations[i]["timestamp_ms"]
+             for i in range(start, end + 1)],
+            list(range(start, end + 1)), data["metadata"]["field_layout"], self.battle_ids[battle],
+        )
+        norm = self.normalization
+        for t, step in enumerate(range(start, end + 1)):
+            transition = transitions[step]
+            action, valid = self.encoder._action(transition)
             sample["action_valid"][t] = valid
             if valid:
                 sample["targets"]["action_type"][t] = int(action[0] == PREV_PLAY)

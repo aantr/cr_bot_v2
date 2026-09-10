@@ -26,6 +26,7 @@ from model_paths import (
     CLASSIFICATION_CARDS_MODEL_PATH,
     CLASSIFICATION_MODEL_PATH,
     DETECTION_ENGINE_PATH,
+    ELIXIR_BAR,
     ELIXIR_DETECTION_ENGINE_PATH,
     TOWER_HP_1,
     TOWER_HP_2,
@@ -47,7 +48,7 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots/last_20_percent.mp4"
+INPUT_VIDEO = SCRIPT_DIR / "screenshots/IMG_1366.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
@@ -58,16 +59,29 @@ DEVICE = 0
 QUANTIZE = 16  # FP16; use None for FP32
 FPS_PROCESS = 30  # Frames per video second to process; None uses source FPS.
 
+# Current elixir is read from a narrow horizontal strip through ELIXIR_BAR.
+# Brightness is the V channel in HSV, in the range 0..255. Values between the
+# thresholds are treated as a soft transition and compared with their midpoint.
+ELIXIR_DARK_BRIGHTNESS_MAX = 135.0
+ELIXIR_LIGHT_BRIGHTNESS_MIN = 150.0
+ELIXIR_SEARCH_STRIP_HEIGHT = 9
+ELIXIR_SEARCH_SAMPLE_WIDTH = 11
+ELIXIR_MAX_VALUE = 10.0
+
 # Tower HP OCR (video-time rate, capped by FPS_PROCESS).
 TOWER_HP_ENABLED = True
-TOWER_HP_FPS = 10.0
+TOWER_HP_FPS = 2.0
+# Re-evaluate every configured crop and select the most confident one. Between
+# these scans OCR runs only on the last selected crop for each tower.
+TOWER_HP_CROP_SELECTION_INTERVAL_MS = 2000
 TOWER_HP_MIN_CONFIDENCE = 0.70  # PaddleOCR recognition score, 0..1.
 TOWER_HP_CONFIRM_READINGS = 2
-# Safety bounds, not actual tower starting HP. Set for your battle/levels.
+# Safety bounds, not actual tower starting
+#  HP. Set for your battle/levels.
 TOWER_HP_MAX_VALUES = {"ally_1": 10000, "ally_2": 10000,
                        "enemy_1": 10000, "enemy_2": 10000}
 TOWER_HP_SCALE = 1.0  # Keep original BGR crops; PaddleOCR resizes internally.
-TOWER_HP_MODEL_NAME = "en_PP-OCRv3_mobile_rec"
+TOWER_HP_MODEL_NAME = "en_PP-OCRv4_mobile_rec"
 TOWER_HP_MODEL_DIR = None  # Optional local PaddleOCR inference model directory.
 TOWER_HP_DEVICE = "cpu"  # Paddle 3.0.0rc1/cu123 gives invalid output on RTX 5080.
 TOWER_HP_CPU_THREADS = 4
@@ -80,6 +94,13 @@ show_tower_hp = False
 if TOWER_HP_ENABLED:
     if not math.isfinite(TOWER_HP_FPS) or TOWER_HP_FPS <= 0:
         raise ValueError("TOWER_HP_FPS must be finite and positive")
+    if (
+        not math.isfinite(TOWER_HP_CROP_SELECTION_INTERVAL_MS)
+        or TOWER_HP_CROP_SELECTION_INTERVAL_MS <= 0
+    ):
+        raise ValueError(
+            "TOWER_HP_CROP_SELECTION_INTERVAL_MS must be finite and positive"
+        )
     if not 0 <= TOWER_HP_MIN_CONFIDENCE <= 1:
         raise ValueError("TOWER_HP_MIN_CONFIDENCE must be between 0 and 1")
     if not isinstance(TOWER_HP_CONFIRM_READINGS, int) or TOWER_HP_CONFIRM_READINGS < 2:
@@ -100,6 +121,28 @@ if any(
 ):
     raise ValueError("Field color weights must be finite positive numbers")
 
+if not (
+    0 <= ELIXIR_DARK_BRIGHTNESS_MAX
+    < ELIXIR_LIGHT_BRIGHTNESS_MIN
+    <= 255
+):
+    raise ValueError(
+        "Elixir brightness thresholds must satisfy "
+        "0 <= dark < light <= 255"
+    )
+if (
+    not isinstance(ELIXIR_SEARCH_STRIP_HEIGHT, int)
+    or ELIXIR_SEARCH_STRIP_HEIGHT < 1
+    or ELIXIR_SEARCH_STRIP_HEIGHT % 2 == 0
+):
+    raise ValueError("ELIXIR_SEARCH_STRIP_HEIGHT must be a positive odd integer")
+if (
+    not isinstance(ELIXIR_SEARCH_SAMPLE_WIDTH, int)
+    or ELIXIR_SEARCH_SAMPLE_WIDTH < 1
+    or ELIXIR_SEARCH_SAMPLE_WIDTH % 2 == 0
+):
+    raise ValueError("ELIXIR_SEARCH_SAMPLE_WIDTH must be a positive odd integer")
+
 # Debug window with the cropped and annotated battlefield.
 show_battlefield = False
 BATTLEFIELD_DEBUG_WINDOW = "Battlefield debug"
@@ -108,6 +151,10 @@ BATTLEFIELD_DEBUG_WIDTH = 500
 # Debug window with the four card slots and classification results.
 show_cards = False
 CARDS_DEBUG_WINDOW = "Cards debug"
+
+# The Tracking preview used to be 50% of the source frame. A 0.25 scale makes
+# the window 50% smaller in both dimensions than that previous preview.
+TRACKING_WINDOW_SCALE = 0.375
 
 
 if not Path(MODEL_PATH).is_file():
@@ -140,7 +187,7 @@ process_fps = fps if FPS_PROCESS is None else min(float(FPS_PROCESS), fps)
 print(f"Video FPS: {fps:g}; processing/output FPS: {process_fps:g}")
 
 video_size = (width, height)
-tower_hp_crops = {}
+tower_hp_crop_candidates = {}
 if TOWER_HP_ENABLED:
     for tower_id, regions in (
         ("ally_1", TOWER_HP_1), ("ally_2", TOWER_HP_2),
@@ -151,14 +198,36 @@ if TOWER_HP_ENABLED:
                 f"Missing HP crop for {tower_id} at {video_size} in model_paths.py. "
                 "Add its coordinates or set TOWER_HP_ENABLED=False."
             )
-        x1, y1, x2, y2 = regions[video_size]
-        if not (0 <= x1 < x2 <= width and 0 <= y1 < y2 <= height):
-            raise ValueError(f"Invalid HP crop for {tower_id}: {regions[video_size]}")
+        configured_crops = regions[video_size]
+        if not isinstance(configured_crops, list) or not configured_crops:
+            raise ValueError(
+                f"HP crops for {tower_id} must be a non-empty list, "
+                f"got: {configured_crops!r}"
+            )
+        validated_crops = []
+        for crop_index, crop in enumerate(configured_crops):
+            if not isinstance(crop, (tuple, list)) or len(crop) != 4:
+                raise ValueError(
+                    f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
+                )
+            x1, y1, x2, y2 = crop
+            if not (0 <= x1 < x2 <= width and 0 <= y1 < y2 <= height):
+                raise ValueError(
+                    f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
+                )
+            validated_crops.append((x1, y1, x2, y2))
         if (tower_id not in TOWER_HP_MAX_VALUES
                 or not isinstance(TOWER_HP_MAX_VALUES[tower_id], int)
                 or TOWER_HP_MAX_VALUES[tower_id] <= 0):
             raise ValueError(f"Set a positive integer max HP for {tower_id}")
-        tower_hp_crops[tower_id] = (x1, y1, x2, y2)
+        tower_hp_crop_candidates[tower_id] = validated_crops
+
+tower_hp_active_crop_indices = {
+    tower_id: 0 for tower_id in tower_hp_crop_candidates
+}
+tower_hp_crops = {
+    tower_id: crops[0] for tower_id, crops in tower_hp_crop_candidates.items()
+}
 
 if video_size not in BATTLEFIELDS:
     raise ValueError(
@@ -170,6 +239,12 @@ if video_size not in CARDS:
     raise ValueError(
         f"Cards crop is not configured for video resolution {width}x{height}. "
         "Add this resolution to CARDS in model_paths.py."
+    )
+if video_size not in ELIXIR_BAR:
+    raise ValueError(
+        f"Elixir bar crop is not configured for video resolution "
+        f"{width}x{height}. Add this resolution to ELIXIR_BAR in "
+        "model_paths.py."
     )
 
 crop_x1, crop_y1, crop_x2, crop_y2 = BATTLEFIELDS[video_size]
@@ -189,6 +264,20 @@ if not (0 <= cards_y1 < cards_y2 <= height):
     )
 if cards_x2 - cards_x1 < 4:
     raise ValueError("Cards crop must be at least 4 pixels wide")
+
+elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2 = (
+    ELIXIR_BAR[video_size]
+)
+if not (0 <= elixir_bar_x1 < elixir_bar_x2 <= width):
+    raise ValueError(
+        f"Invalid elixir bar horizontal crop: "
+        f"{(elixir_bar_x1, elixir_bar_x2)} for width {width}"
+    )
+if not (0 <= elixir_bar_y1 < elixir_bar_y2 <= height):
+    raise ValueError(
+        f"Invalid elixir bar vertical crop: "
+        f"{(elixir_bar_y1, elixir_bar_y2)} for height {height}"
+    )
 
 OUTPUT_VIDEO.parent.mkdir(parents=True, exist_ok=True)
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -237,8 +326,9 @@ TRACK_CONFIDENCE_DECAY = 0.85
 TRACK_MIN_PREDICTED_CONFIDENCE = 0.15
 # A new unit is classified for a few frames, then its class is cached by track_id.
 # For strict one-shot mode, set CONFIRM_SAMPLES=1 and LOCK_MIN_CONFIDENCE=0.
-UNIT_CLASSIFICATION_CONFIRM_SAMPLES = 3
-UNIT_CLASSIFICATION_MAX_SAMPLES = 5
+UNIT_CLASSIFICATION_INTERVAL_MS = 200
+UNIT_CLASSIFICATION_CONFIRM_SAMPLES = 5
+UNIT_CLASSIFICATION_MAX_SAMPLES = 10
 UNIT_CLASSIFICATION_LOCK_MIN_CONFIDENCE = 0.70
 CARD_COUNT = 4
 CARD_IMGSZ = 224
@@ -270,6 +360,12 @@ if not 0 < TRACK_CONFIDENCE_DECAY <= 1:
     raise ValueError("TRACK_CONFIDENCE_DECAY must be in the range (0, 1]")
 if not 0 <= TRACK_MIN_PREDICTED_CONFIDENCE <= 1:
     raise ValueError("TRACK_MIN_PREDICTED_CONFIDENCE must be in the range [0, 1]")
+if (
+    not isinstance(UNIT_CLASSIFICATION_INTERVAL_MS, (int, float))
+    or not math.isfinite(UNIT_CLASSIFICATION_INTERVAL_MS)
+    or UNIT_CLASSIFICATION_INTERVAL_MS < 0
+):
+    raise ValueError("UNIT_CLASSIFICATION_INTERVAL_MS must be finite and non-negative")
 if (
     not isinstance(UNIT_CLASSIFICATION_CONFIRM_SAMPLES, int)
     or UNIT_CLASSIFICATION_CONFIRM_SAMPLES < 1
@@ -427,6 +523,70 @@ class TowerHPSampler:
         return True
 
 
+TOWER_HP_CROP_KEY_SEPARATOR = "::crop::"
+
+
+def tower_hp_candidate_key(tower_id: str, crop_index: int) -> str:
+    return f"{tower_id}{TOWER_HP_CROP_KEY_SEPARATOR}{crop_index}"
+
+
+def parse_tower_hp_candidate_key(ocr_key: str) -> tuple[str, int | None]:
+    tower_id, separator, crop_index = ocr_key.partition(
+        TOWER_HP_CROP_KEY_SEPARATOR
+    )
+    if not separator:
+        return ocr_key, None
+    return tower_id, int(crop_index)
+
+
+def build_tower_hp_candidate_batch(
+    crop_candidates: dict[str, list[tuple[int, int, int, int]]],
+) -> dict[str, tuple[int, int, int, int]]:
+    return {
+        tower_hp_candidate_key(tower_id, crop_index): crop
+        for tower_id, crops in crop_candidates.items()
+        for crop_index, crop in enumerate(crops)
+    }
+
+
+def select_best_tower_hp_crops(
+    readings: dict,
+    previews: dict,
+    crop_candidates: dict[str, list[tuple[int, int, int, int]]],
+    active_indices: dict[str, int],
+) -> tuple[dict, dict, dict[str, int]]:
+    """Collapse a candidate scan to one highest-confidence crop per tower."""
+    selected_readings = {}
+    selected_previews = {}
+    selected_indices = dict(active_indices)
+
+    for tower_id, crops in crop_candidates.items():
+        available = []
+        for crop_index in range(len(crops)):
+            key = tower_hp_candidate_key(tower_id, crop_index)
+            if key in readings:
+                available.append((crop_index, key, readings[key]))
+        if not available:
+            continue
+
+        # A valid number always wins over a confident non-numeric result. If all
+        # candidates are invalid, expose the most confident error but keep the
+        # previously selected coordinates.
+        crop_index, key, reading = max(
+            available,
+            key=lambda item: (
+                item[2].get("value") is not None,
+                float(item[2].get("confidence", 0.0)),
+            ),
+        )
+        if reading.get("value") is not None:
+            selected_indices[tower_id] = crop_index
+        selected_readings[tower_id] = reading
+        selected_previews[tower_id] = previews[key]
+
+    return selected_readings, selected_previews, selected_indices
+
+
 def recognize_tower_hp_previews(previews: dict, recognizer) -> tuple[dict, dict]:
     """Recognize copied crops; this function may run in a background thread."""
     if not previews:
@@ -444,7 +604,10 @@ def recognize_tower_hp_previews(previews: dict, recognizer) -> tuple[dict, dict]
                 for tower_id in previews}, previews
     batch_ms = (time.perf_counter() - started) * 1000
     readings = {}
-    for tower_id, result in zip(previews, results):
+    for ocr_key, result in zip(previews, results):
+        # Keep this helper independently testable when only selected functions
+        # are loaded from the module.
+        tower_id = ocr_key.partition("::crop::")[0]
         try:
             reading = parse_tower_hp_data(result, TOWER_HP_MAX_VALUES[tower_id])
         except (KeyError, TypeError, ValueError) as exc:
@@ -452,7 +615,7 @@ def recognize_tower_hp_previews(previews: dict, recognizer) -> tuple[dict, dict]
                        "error": f"ocr_error: {exc}"}
         reading["batch_ms"] = round(batch_ms, 2)
         reading["ocr_ms"] = round(batch_ms / len(previews), 2)  # Amortized, not per-crop timing.
-        readings[tower_id] = reading
+        readings[ocr_key] = reading
     return readings, previews
 
 
@@ -470,6 +633,10 @@ class TowerHPAsyncReader:
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tower-hp")
         self.future: Future | None = None
         self.timestamp_ms: float | None = None
+
+    @property
+    def is_busy(self) -> bool:
+        return self.future is not None
 
     def submit(self, frame: np.ndarray, crops: dict, timestamp_ms: float) -> bool:
         if self.future is not None or not self.recognizer.is_running:
@@ -742,6 +909,123 @@ def draw_card_predictions(
             2,
             cv2.LINE_AA,
         )
+
+
+def recognize_elixir_bar(
+    frame: np.ndarray,
+    crop_bounds: tuple[int, int, int, int],
+) -> dict[str, float | int]:
+    """Find the bright/dark elixir boundary with a horizontal binary search."""
+    x1, y1, x2, y2 = crop_bounds
+    crop = frame[y1:y2, x1:x2]
+    if crop.size == 0:
+        raise ValueError(f"Elixir bar crop is empty: {crop_bounds}")
+
+    value_channel = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)[:, :, 2]
+    crop_height, crop_width = value_channel.shape
+    strip_height = min(ELIXIR_SEARCH_STRIP_HEIGHT, crop_height)
+    strip_top = max(0, (crop_height - strip_height) // 2)
+    strip_bottom = strip_top + strip_height
+    sample_half_width = ELIXIR_SEARCH_SAMPLE_WIDTH // 2
+
+    def brightness_at(column: int) -> float:
+        sample_left = max(0, column - sample_half_width)
+        sample_right = min(crop_width, column + sample_half_width + 1)
+        sample = value_channel[
+            strip_top:strip_bottom,
+            sample_left:sample_right,
+        ]
+        return float(np.median(sample))
+
+    transition_brightness = (
+        ELIXIR_DARK_BRIGHTNESS_MAX + ELIXIR_LIGHT_BRIGHTNESS_MIN
+    ) / 2
+
+    def is_bright(brightness: float) -> bool:
+        if brightness >= ELIXIR_LIGHT_BRIGHTNESS_MIN:
+            return True
+        if brightness <= ELIXIR_DARK_BRIGHTNESS_MAX:
+            return False
+        return brightness >= transition_brightness
+
+    left_brightness = brightness_at(0)
+    right_brightness = brightness_at(crop_width - 1)
+
+    if not is_bright(left_brightness):
+        boundary = 0.0
+        boundary_brightness = left_brightness
+    elif is_bright(right_brightness):
+        boundary = float(crop_width)
+        boundary_brightness = right_brightness
+    else:
+        # The left part of the bar is bright and the right part is dark. Keep
+        # that invariant while narrowing the interval to the transition pixel.
+        bright_column = 0
+        dark_column = crop_width - 1
+        boundary_brightness = brightness_at((bright_column + dark_column) // 2)
+        while dark_column - bright_column > 1:
+            middle = (bright_column + dark_column) // 2
+            boundary_brightness = brightness_at(middle)
+            if is_bright(boundary_brightness):
+                bright_column = middle
+            else:
+                dark_column = middle
+        boundary = (bright_column + dark_column) / 2
+
+    fill_ratio = min(1.0, max(0.0, boundary / crop_width))
+    return {
+        "value": fill_ratio * ELIXIR_MAX_VALUE,
+        "fill_ratio": fill_ratio,
+        "boundary_x": int(round(x1 + boundary)),
+        "boundary_brightness": boundary_brightness,
+        "left_brightness": left_brightness,
+        "right_brightness": right_brightness,
+    }
+
+
+def draw_elixir_bar_reading(
+    frame: np.ndarray,
+    crop_bounds: tuple[int, int, int, int],
+    reading: dict[str, float | int],
+) -> None:
+    """Draw the measured boundary and current value below the source bar."""
+    x1, y1, x2, y2 = crop_bounds
+    boundary_x = int(reading["boundary_x"])
+    cv2.rectangle(frame, (x1, y1), (x2 - 1, y2 - 1), (0, 255, 255), 2)
+    cv2.line(
+        frame,
+        (boundary_x, y1),
+        (boundary_x, y2 - 1),
+        (0, 255, 0),
+        3,
+    )
+
+    label = (
+        f"Elixir: {float(reading['value']):.1f}/{ELIXIR_MAX_VALUE:g}  "
+        f"fill={float(reading['fill_ratio']) * 100:.0f}%  "
+        f"V={float(reading['boundary_brightness']):.0f}"
+    )
+    label_y = min(frame.shape[0] - 8, y2 + 30)
+    cv2.putText(
+        frame,
+        label,
+        (x1, label_y),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.65,
+        (0, 0, 0),
+        5,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        frame,
+        label,
+        (x1, label_y),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.65,
+        (0, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
 
 
 @dataclass(frozen=True)
@@ -1112,10 +1396,27 @@ class UnitClassificationCacheEntry:
     class_name: str = "unknown"
     confidence: float = 0.0
     locked: bool = False
+    last_classified_at_ms: float | None = None
 
-    def add(self, class_name: str, confidence: float) -> None:
+    def classification_due(self, timestamp_ms: float) -> bool:
+        if self.locked:
+            return False
+        if self.last_classified_at_ms is None:
+            return True
+        return (
+            timestamp_ms - self.last_classified_at_ms + 1e-6
+            >= UNIT_CLASSIFICATION_INTERVAL_MS
+        )
+
+    def add(
+        self,
+        class_name: str,
+        confidence: float,
+        timestamp_ms: float,
+    ) -> None:
         """Add one prediction and update the confidence-weighted winner."""
         confidence = float(confidence)
+        self.last_classified_at_ms = float(timestamp_ms)
         self.sample_count += 1
         self.weighted_scores[class_name] = (
             self.weighted_scores.get(class_name, 0.0) + confidence
@@ -1346,11 +1647,22 @@ tower_hp_async_reader = (
 tower_hp_states = {tower_id: TowerHPState() for tower_id in tower_hp_crops}
 tower_hp = {tower_id: state.snapshot() for tower_id, state in tower_hp_states.items()}
 tower_hp_sampler = TowerHPSampler(1000 / min(TOWER_HP_FPS, process_fps)) if TOWER_HP_ENABLED else None
+tower_hp_crop_selection_sampler = (
+    TowerHPSampler(TOWER_HP_CROP_SELECTION_INTERVAL_MS)
+    if TOWER_HP_ENABLED
+    else None
+)
+tower_hp_candidate_batch = build_tower_hp_candidate_batch(
+    tower_hp_crop_candidates
+)
 if TOWER_HP_ENABLED:
     TOWER_HP_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
         hp_log.write(json.dumps({"type": "run", "video": str(INPUT_VIDEO),
                                  "source_fps": fps, "ocr_fps": min(TOWER_HP_FPS, process_fps),
+                                 "crop_selection_interval_ms": TOWER_HP_CROP_SELECTION_INTERVAL_MS,
+                                 "crop_candidates": tower_hp_crop_candidates,
+                                 "active_crop_indices": tower_hp_active_crop_indices,
                                  "crops": tower_hp_crops, "ocr_backend": "paddleocr",
                                  "model": TOWER_HP_MODEL_NAME, "device": TOWER_HP_DEVICE}) + "\n")
 card_event_markers: list[tuple[int, int, str, int]] = []
@@ -1369,6 +1681,28 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
     completed_hp = tower_hp_async_reader.poll() if tower_hp_async_reader is not None else None
     if completed_hp is not None:
         hp_timestamp_ms, hp_readings, hp_previews = completed_hp
+        crop_selection_scan = any(
+            parse_tower_hp_candidate_key(ocr_key)[1] is not None
+            for ocr_key in hp_readings
+        )
+        if crop_selection_scan:
+            (
+                hp_readings,
+                hp_previews,
+                selected_crop_indices,
+            ) = select_best_tower_hp_crops(
+                hp_readings,
+                hp_previews,
+                tower_hp_crop_candidates,
+                tower_hp_active_crop_indices,
+            )
+            tower_hp_active_crop_indices.update(selected_crop_indices)
+            tower_hp_crops.update(
+                {
+                    tower_id: tower_hp_crop_candidates[tower_id][crop_index]
+                    for tower_id, crop_index in selected_crop_indices.items()
+                }
+            )
         hp_frame_index = round(hp_timestamp_ms * fps / 1000)
         for tower_id, reading in hp_readings.items():
             state = tower_hp_states[tower_id]
@@ -1385,6 +1719,9 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
         with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
             hp_log.write(json.dumps({"type": "observation", "frame_index": hp_frame_index,
                                      "timestamp_ms": hp_timestamp_ms, "readings": hp_readings,
+                                     "crop_selection_scan": crop_selection_scan,
+                                     "active_crop_indices": tower_hp_active_crop_indices,
+                                     "active_crops": tower_hp_crops,
                                      "tower_hp": tower_hp}, ensure_ascii=False) + "\n")
         if show_tower_hp:
             show_tower_hp_debug(frame, tower_hp_crops, hp_previews, hp_readings)
@@ -1392,9 +1729,21 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
             event_logger.error("Tower HP OCR worker stopped; OCR is disabled for this run")
             tower_hp_sampler = None
 
-    if tower_hp_sampler is not None and tower_hp_sampler.due(timestamp_ms):
-        # If OCR is still busy, skip this sample instead of delaying video inference.
-        tower_hp_async_reader.submit(frame, tower_hp_crops, timestamp_ms)
+    if (
+        tower_hp_sampler is not None
+        and tower_hp_async_reader is not None
+        and not tower_hp_async_reader.is_busy
+    ):
+        # A full candidate scan has priority. Between scans, OCR only receives
+        # the last highest-confidence crop selected for each tower.
+        if tower_hp_crop_selection_sampler.due(timestamp_ms):
+            tower_hp_async_reader.submit(
+                frame,
+                tower_hp_candidate_batch,
+                timestamp_ms,
+            )
+        elif tower_hp_sampler.due(timestamp_ms):
+            tower_hp_async_reader.submit(frame, tower_hp_crops, timestamp_ms)
 
     # frame_cards = get_image_cards_format(frame)
     battlefield = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
@@ -1562,7 +1911,7 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                 if (
                     blue_rect is not None
                     and classification_state is not None
-                    and not classification_state.locked
+                    and classification_state.classification_due(timestamp_ms)
                 ):
                     predictions = classify_crop(
                         classification_model,
@@ -1573,7 +1922,11 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                         quantize=16,
                     )
                     class_name, confidence = predictions[0]
-                    classification_state.add(class_name, confidence)
+                    classification_state.add(
+                        class_name,
+                        confidence,
+                        timestamp_ms,
+                    )
 
                 cls_text = (
                     classification_state.display_text
@@ -1755,6 +2108,17 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
     output_frame[crop_y1:crop_y2, crop_x1:crop_x2] = battlefield
     draw_tower_hp(output_frame, tower_hp_crops, tower_hp_states)
 
+    elixir_bar_reading = recognize_elixir_bar(
+        frame,
+        (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
+    )
+    frame_data["elixir_bar"] = elixir_bar_reading
+    draw_elixir_bar_reading(
+        output_frame,
+        (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
+        elixir_bar_reading,
+    )
+
     card_images, card_slots = split_cards_from_frame(
         frame,
         (cards_x1, cards_y1, cards_x2, cards_y2),
@@ -1832,8 +2196,8 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
         2,
     )
     frame_height, frame_width = output_frame.shape[:2]
-    new_width = frame_width // 2
-    new_height = frame_height // 2
+    new_width = max(1, round(frame_width * TRACKING_WINDOW_SCALE))
+    new_height = max(1, round(frame_height * TRACKING_WINDOW_SCALE))
     resized_frame = cv2.resize(output_frame, (new_width, new_height))
     field_frame = draw_objects_on_field(
         field_background,

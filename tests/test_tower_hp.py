@@ -19,13 +19,16 @@ def load_helpers():
     tree = ast.parse(path.read_text(encoding="utf-8-sig"))
     names = {"prepare_tower_hp_crop", "parse_tower_hp_data", "TowerHPState",
              "TowerHPSampler", "read_tower_hp", "recognize_tower_hp_previews",
-             "TowerHPAsyncReader", "draw_tower_hp", "create_tower_hp_recognizer"}
+             "TowerHPAsyncReader", "draw_tower_hp", "create_tower_hp_recognizer",
+             "tower_hp_candidate_key", "parse_tower_hp_candidate_key",
+             "build_tower_hp_candidate_batch", "select_best_tower_hp_crops"}
     nodes = [node for node in tree.body
              if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names]
     ns = dict(cv2=cv2, np=np, math=math, time=time, dataclass=dataclass,
               Future=Future, ThreadPoolExecutor=ThreadPoolExecutor,
               TOWER_HP_MIN_CONFIDENCE=0.7, TOWER_HP_CONFIRM_READINGS=2,
               TOWER_HP_SCALE=1.0,
+              TOWER_HP_CROP_KEY_SEPARATOR="::crop::",
               TOWER_HP_MAX_VALUES={"ally_1": 10000, "enemy_1": 10000})
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), ns)
     return ns
@@ -138,6 +141,27 @@ class TowerHPTests(unittest.TestCase):
         recognizer = Mock()
         self.assertEqual(self.ns["read_tower_hp"](np.zeros((10, 10, 3), np.uint8), {}, recognizer), ({}, {}))
         recognizer.predict.assert_not_called()
+
+    def test_selects_valid_highest_confidence_crop_and_keeps_last_on_failure(self):
+        candidates = {
+            "ally_1": [(0, 0, 10, 10), (10, 0, 20, 10)],
+            "enemy_1": [(20, 0, 30, 10), (30, 0, 40, 10)],
+        }
+        batch = self.ns["build_tower_hp_candidate_batch"](candidates)
+        self.assertEqual(len(batch), 4)
+        readings = {
+            "ally_1::crop::0": {"value": 2500, "confidence": .80},
+            "ally_1::crop::1": {"value": 2500, "confidence": .95},
+            "enemy_1::crop::0": {"value": None, "confidence": .99},
+            "enemy_1::crop::1": {"value": None, "confidence": .20},
+        }
+        previews = {key: np.zeros((10, 10, 3), np.uint8) for key in readings}
+        selected, _, indices = self.ns["select_best_tower_hp_crops"](
+            readings, previews, candidates, {"ally_1": 0, "enemy_1": 1}
+        )
+        self.assertEqual(selected["ally_1"]["confidence"], .95)
+        self.assertEqual(indices["ally_1"], 1)
+        self.assertEqual(indices["enemy_1"], 1)
 
     def test_async_reader_skips_while_busy_and_keeps_sample_timestamp(self):
         started = threading.Event()

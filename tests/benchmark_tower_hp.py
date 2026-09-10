@@ -42,7 +42,7 @@ def main():
     fps = capture.get(cv2.CAP_PROP_FPS)
     size = (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
     print("Video:", size, fps, flush=True)
-    crops = {name: getattr(model_paths, constant)[size] for name, constant in (
+    crops = {name: getattr(model_paths, constant)[size][0] for name, constant in (
         ("ally_1", "TOWER_HP_1"), ("ally_2", "TOWER_HP_2"),
         ("enemy_1", "TOWER_HP_ENEMY_1"), ("enemy_2", "TOWER_HP_ENEMY_2"))}
     states = {name: ns["TowerHPState"]() for name in crops}

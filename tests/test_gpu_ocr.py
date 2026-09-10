@@ -6,10 +6,11 @@ import cv2
 import time
 import sys
 import os
+from pathlib import Path
 
 # Добавьте cuDNN в PATH
 if sys.platform == 'win32':
-    cudnn_dir = r'C:\Users\aantr\cr_bot\venv\Lib\site-packages\nvidia\cudnn\bin'
+    cudnn_dir = str(Path(sys.prefix) / 'Lib/site-packages/nvidia/cudnn/bin')
     if os.path.exists(cudnn_dir):
         os.add_dll_directory(cudnn_dir)
 

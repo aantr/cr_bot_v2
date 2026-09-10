@@ -1,7 +1,9 @@
 import ctypes
 import os
+import sys
+from pathlib import Path
 
-cudnn_path = r'C:\Users\aantr\cr_bot\venv\Lib\site-packages\nvidia\cudnn\bin'
+cudnn_path = str(Path(sys.prefix) / 'Lib/site-packages/nvidia/cudnn/bin')
 dlls = [
     'cudnn64_9.dll',
     'cudnn_adv64_9.dll',

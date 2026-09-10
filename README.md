@@ -89,7 +89,7 @@ Its output is written to `screenshots/output_tracked_calman.mp4`.
 Install the optional Python dependency from the project root:
 
 ```powershell
-.\venv\Scripts\python.exe -m pip install -r v2\requirements-ocr.txt
+.\v2\venv\Scripts\python.exe -m pip install -r v2\requirements-ocr.txt
 ```
 
 HP recognition uses PaddleOCR 3.x `TextRecognition`, without text detection or
@@ -162,13 +162,13 @@ confirmation time. Rapid intermediate HP changes may be missed at low OCR rates.
 Run the helper tests without downloading OCR models or running GPU inference:
 
 ```powershell
-.\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_tower_hp*.py" -v
+.\v2\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_tower_hp*.py" -v
 ```
 
 Run the actual PaddleOCR diagnostic on `screenshots/IMG_1357.mp4`:
 
 ```powershell
-.\venv\Scripts\python.exe v2/tests/benchmark_tower_hp.py
+.\v2\venv\Scripts\python.exe v2/tests/benchmark_tower_hp.py
 ```
 
 This prints raw HP results and timings at 0, 0.1, 0.2, 1, 3 and 8 seconds and saves crop

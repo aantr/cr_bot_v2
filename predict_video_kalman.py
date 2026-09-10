@@ -157,164 +157,6 @@ CARDS_DEBUG_WINDOW = "Cards debug"
 TRACKING_WINDOW_SCALE = 0.375
 
 
-if not Path(MODEL_PATH).is_file():
-    raise FileNotFoundError(f"Bars TensorRT engine not found: {MODEL_PATH}")
-if not Path(ELIXIR_MODEL_PATH).is_file():
-    raise FileNotFoundError(
-        f"Elixir TensorRT engine not found: {ELIXIR_MODEL_PATH}. "
-        "Run train_elixir\\export_tensor_rt.py after training finishes."
-    )
-if not Path(CARDS_MODEL_PATH).is_file():
-    raise FileNotFoundError(f"Cards classification model not found: {CARDS_MODEL_PATH}")
-
-model = YOLO(str(MODEL_PATH))
-elixir_model = YOLO(str(ELIXIR_MODEL_PATH))
-classification_cards_model = YOLO(str(CARDS_MODEL_PATH))
-cap = cv2.VideoCapture(str(INPUT_VIDEO))
-if not cap.isOpened():
-    raise RuntimeError(f"Cannot open video: {INPUT_VIDEO}")
-
-fps = cap.get(cv2.CAP_PROP_FPS)
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-if not math.isfinite(fps) or fps <= 0:
-    raise ValueError(f"Invalid video FPS: {fps}")
-if FPS_PROCESS is not None and (
-    not math.isfinite(FPS_PROCESS) or FPS_PROCESS <= 0
-):
-    raise ValueError("FPS_PROCESS must be a positive number or None")
-process_fps = fps if FPS_PROCESS is None else min(float(FPS_PROCESS), fps)
-print(f"Video FPS: {fps:g}; processing/output FPS: {process_fps:g}")
-
-video_size = (width, height)
-tower_hp_crop_candidates = {}
-if TOWER_HP_ENABLED:
-    for tower_id, regions in (
-        ("ally_1", TOWER_HP_1), ("ally_2", TOWER_HP_2),
-        ("enemy_1", TOWER_HP_ENEMY_1), ("enemy_2", TOWER_HP_ENEMY_2),
-    ):
-        if video_size not in regions:
-            raise ValueError(
-                f"Missing HP crop for {tower_id} at {video_size} in model_paths.py. "
-                "Add its coordinates or set TOWER_HP_ENABLED=False."
-            )
-        configured_crops = regions[video_size]
-        if not isinstance(configured_crops, list) or not configured_crops:
-            raise ValueError(
-                f"HP crops for {tower_id} must be a non-empty list, "
-                f"got: {configured_crops!r}"
-            )
-        validated_crops = []
-        for crop_index, crop in enumerate(configured_crops):
-            if not isinstance(crop, (tuple, list)) or len(crop) != 4:
-                raise ValueError(
-                    f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
-                )
-            x1, y1, x2, y2 = crop
-            if not (0 <= x1 < x2 <= width and 0 <= y1 < y2 <= height):
-                raise ValueError(
-                    f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
-                )
-            validated_crops.append((x1, y1, x2, y2))
-        if (tower_id not in TOWER_HP_MAX_VALUES
-                or not isinstance(TOWER_HP_MAX_VALUES[tower_id], int)
-                or TOWER_HP_MAX_VALUES[tower_id] <= 0):
-            raise ValueError(f"Set a positive integer max HP for {tower_id}")
-        tower_hp_crop_candidates[tower_id] = validated_crops
-
-tower_hp_active_crop_indices = {
-    tower_id: 0 for tower_id in tower_hp_crop_candidates
-}
-tower_hp_crops = {
-    tower_id: crops[0] for tower_id, crops in tower_hp_crop_candidates.items()
-}
-
-if video_size not in BATTLEFIELDS:
-    raise ValueError(
-        f"Unsupported video resolution: {width}x{height}. "
-        f"Add ({width}, {height}): (x1, y1, x2, y2) to "
-        "BATTLEFIELDS in model_paths.py."
-    )
-if video_size not in CARDS:
-    raise ValueError(
-        f"Cards crop is not configured for video resolution {width}x{height}. "
-        "Add this resolution to CARDS in model_paths.py."
-    )
-if video_size not in ELIXIR_BAR:
-    raise ValueError(
-        f"Elixir bar crop is not configured for video resolution "
-        f"{width}x{height}. Add this resolution to ELIXIR_BAR in "
-        "model_paths.py."
-    )
-
-crop_x1, crop_y1, crop_x2, crop_y2 = BATTLEFIELDS[video_size]
-if not (0 <= crop_x1 < crop_x2 <= width):
-    raise ValueError(f"Invalid horizontal crop: {(crop_x1, crop_x2)} for width {width}")
-if not (0 <= crop_y1 < crop_y2 <= height):
-    raise ValueError(f"Invalid vertical crop: {(crop_y1, crop_y2)} for height {height}")
-
-cards_x1, cards_y1, cards_x2, cards_y2 = CARDS[video_size]
-if not (0 <= cards_x1 < cards_x2 <= width):
-    raise ValueError(
-        f"Invalid cards horizontal crop: {(cards_x1, cards_x2)} for width {width}"
-    )
-if not (0 <= cards_y1 < cards_y2 <= height):
-    raise ValueError(
-        f"Invalid cards vertical crop: {(cards_y1, cards_y2)} for height {height}"
-    )
-if cards_x2 - cards_x1 < 4:
-    raise ValueError("Cards crop must be at least 4 pixels wide")
-
-elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2 = (
-    ELIXIR_BAR[video_size]
-)
-if not (0 <= elixir_bar_x1 < elixir_bar_x2 <= width):
-    raise ValueError(
-        f"Invalid elixir bar horizontal crop: "
-        f"{(elixir_bar_x1, elixir_bar_x2)} for width {width}"
-    )
-if not (0 <= elixir_bar_y1 < elixir_bar_y2 <= height):
-    raise ValueError(
-        f"Invalid elixir bar vertical crop: "
-        f"{(elixir_bar_y1, elixir_bar_y2)} for height {height}"
-    )
-
-OUTPUT_VIDEO.parent.mkdir(parents=True, exist_ok=True)
-fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-out = cv2.VideoWriter(str(OUTPUT_VIDEO), fourcc, process_fps, (width, height))
-if not out.isOpened():
-    raise RuntimeError(f"Cannot create output video: {OUTPUT_VIDEO}")
-
-#
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Загрузка модели
-classification_model = YOLO(
-    CLASSIFICATION_MODEL_PATH
-)
-
-# Предсказание
-# predicted_class = predict_single_image(classification_model, image_path, classification_classes, device)
-# predictions = classify_crop(
-#     classification_model,
-#     blue_rect,
-#     imgsz=224,
-#     device="0",
-#     top_k=3,
-#     quantize=16,
-# )
-
-# class_name, confidence = predictions[0]
-# cls_text = f"{class_name} {confidence:.2f}"
-
-# end preprocess class. model
-
-# Для сбора статистики по кадрам
-frame_stats = []
-object_history = defaultdict(list)  # история позиций объектов
-
-bars_place = defaultdict(list)
-bar_for_level = defaultdict(int)
 LEN_POSES = 5
 SIZE_OF_RECT = 128
 SIZE_RESCTRICTIONS = (10, 10), (50, 60)
@@ -1182,7 +1024,8 @@ def resolve_played_card(
     event_last_frame: int,
     video_fps: float,
     sampling_fps: float | None = None,
-) -> tuple[str, int | None, float]:
+    *, return_details: bool = False,
+) -> tuple[str, int | None, float] | dict:
     """Find the slot that became empty and vote on its preceding card class."""
     sampling_fps = video_fps if sampling_fps is None else sampling_fps
     empty_lead_frames = max(1, math.ceil(video_fps * CARD_EMPTY_LEAD_MS / 1000))
@@ -1198,16 +1041,19 @@ def resolve_played_card(
         1,
         math.ceil(video_fps * CARD_EMPTY_CONFIRM_MS / 1000),
     )
-    best_match: tuple[tuple[float, ...], str, int, float] | None = None
+    best_match = None
 
     for slot_index, history in enumerate(histories):
+        history_samples = list(history)
         possible_empty_transitions = [
             observation
-            for observation in history
+            for sample_index, observation in enumerate(history_samples)
             if event_first_frame - empty_lead_frames
             <= observation.frame_index
             <= event_last_frame
             and observation.class_name.lower() == EMPTY_CARD_CLASS
+            and (sample_index == 0
+                 or history_samples[sample_index - 1].class_name.lower() != EMPTY_CARD_CLASS)
         ]
         for empty_observation in possible_empty_transitions:
             empty_frame = empty_observation.frame_index
@@ -1258,13 +1104,17 @@ def resolve_played_card(
                 float(class_count),
                 average_confidence,
             )
-            match = (score, class_name, slot_index + 1, average_confidence)
+            match = (score, class_name, slot_index + 1, average_confidence, empty_frame)
             if best_match is None or match[0] > best_match[0]:
                 best_match = match
 
     if best_match is None:
-        return "unknown", None, 0.0
-    _, class_name, slot_number, confidence = best_match
+        class_name, slot_number, confidence, empty_frame = "unknown", None, 0.0, None
+    else:
+        _, class_name, slot_number, confidence, empty_frame = best_match
+    if return_details:
+        return {"card": class_name, "slot": slot_number,
+                "confidence": confidence, "empty_frame": empty_frame}
     return class_name, slot_number, confidence
 
 
@@ -1624,631 +1474,919 @@ def iter_processing_frames(capture, source_fps: float, target_fps: float):
         sample_index += 1
 
 
-bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
-bar_kalman_last_seen: dict[int, int] = {}
-unit_track_memories: dict[int, UnitTrackMemory] = {}
-unit_classification_cache: dict[int, UnitClassificationCacheEntry] = {}
-elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
-elixir_kalman_last_seen: dict[int, int] = {}
-elixir_event_tracker = ElixirEventTracker(
-    video_fps=fps,
-    battlefield_width=crop_x2 - crop_x1,
-    battlefield_height=crop_y2 - crop_y1,
-)
-card_history_length = max(1, math.ceil(process_fps * CARD_HISTORY_MS / 1000) + 1)
-card_histories: list[deque[CardObservation]] = [
-    deque(maxlen=card_history_length) for _ in range(CARD_COUNT)
-]
-event_logger = create_event_logger(EVENT_LOG_PATH)
-tower_hp_recognizer = create_tower_hp_recognizer() if TOWER_HP_ENABLED else None
-tower_hp_async_reader = (
-    TowerHPAsyncReader(tower_hp_recognizer) if tower_hp_recognizer is not None else None
-)
-tower_hp_states = {tower_id: TowerHPState() for tower_id in tower_hp_crops}
-tower_hp = {tower_id: state.snapshot() for tower_id, state in tower_hp_states.items()}
-tower_hp_sampler = TowerHPSampler(1000 / min(TOWER_HP_FPS, process_fps)) if TOWER_HP_ENABLED else None
-tower_hp_crop_selection_sampler = (
-    TowerHPSampler(TOWER_HP_CROP_SELECTION_INTERVAL_MS)
-    if TOWER_HP_ENABLED
-    else None
-)
-tower_hp_candidate_batch = build_tower_hp_candidate_batch(
-    tower_hp_crop_candidates
-)
-if TOWER_HP_ENABLED:
-    TOWER_HP_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
-        hp_log.write(json.dumps({"type": "run", "video": str(INPUT_VIDEO),
-                                 "source_fps": fps, "ocr_fps": min(TOWER_HP_FPS, process_fps),
-                                 "crop_selection_interval_ms": TOWER_HP_CROP_SELECTION_INTERVAL_MS,
-                                 "crop_candidates": tower_hp_crop_candidates,
-                                 "active_crop_indices": tower_hp_active_crop_indices,
-                                 "crops": tower_hp_crops, "ocr_backend": "paddleocr",
-                                 "model": TOWER_HP_MODEL_NAME, "device": TOWER_HP_DEVICE}) + "\n")
-card_event_markers: list[tuple[int, int, str, int]] = []
-card_event_marker_frames = max(1, math.ceil(fps * CARD_EVENT_MARKER_MS / 1000))
-field_background = build_field_background()
-cv2.namedWindow(FIELD_WINDOW_NAME, cv2.WINDOW_NORMAL)
-cv2.resizeWindow(
-    FIELD_WINDOW_NAME,
-    field_background.shape[1],
-    field_background.shape[0],
-)
+def run_video_prediction(
+    input_video=INPUT_VIDEO, output_video=OUTPUT_VIDEO, *,
+    process_fps_limit=FPS_PROCESS, display=True, write_video=True,
+    observation_callback=None, hp_enabled=TOWER_HP_ENABLED, synchronous_hp=False,
+    write_logs=True,
+):
+    """Run shared perception; the callback receives causal per-frame observations.
 
-for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
-    # frame_count remains a source-video index: all ms thresholds use source fps.
-    timestamp_ms = frame_count * 1000 / fps
-    completed_hp = tower_hp_async_reader.poll() if tower_hp_async_reader is not None else None
-    if completed_hp is not None:
-        hp_timestamp_ms, hp_readings, hp_previews = completed_hp
-        crop_selection_scan = any(
-            parse_tower_hp_candidate_key(ocr_key)[1] is not None
-            for ocr_key in hp_readings
-        )
-        if crop_selection_scan:
-            (
-                hp_readings,
-                hp_previews,
-                selected_crop_indices,
-            ) = select_best_tower_hp_crops(
-                hp_readings,
-                hp_previews,
-                tower_hp_crop_candidates,
-                tower_hp_active_crop_indices,
+    Offline callers use display=False, write_video=False, write_logs=False and
+    synchronous_hp=True. Importing this module does not open videos or models.
+    """
+    INPUT_VIDEO = Path(input_video)
+    OUTPUT_VIDEO = Path(output_video)
+    FPS_PROCESS = process_fps_limit
+    TOWER_HP_ENABLED = hp_enabled
+    cap = None
+    out = None
+    tower_hp_recognizer = None
+    tower_hp_async_reader = None
+    try:
+        if not Path(MODEL_PATH).is_file():
+            raise FileNotFoundError(f"Bars TensorRT engine not found: {MODEL_PATH}")
+        if not Path(ELIXIR_MODEL_PATH).is_file():
+            raise FileNotFoundError(
+                f"Elixir TensorRT engine not found: {ELIXIR_MODEL_PATH}. "
+                "Run train_elixir\\export_tensor_rt.py after training finishes."
             )
-            tower_hp_active_crop_indices.update(selected_crop_indices)
-            tower_hp_crops.update(
-                {
-                    tower_id: tower_hp_crop_candidates[tower_id][crop_index]
-                    for tower_id, crop_index in selected_crop_indices.items()
-                }
-            )
-        hp_frame_index = round(hp_timestamp_ms * fps / 1000)
-        for tower_id, reading in hp_readings.items():
-            state = tower_hp_states[tower_id]
-            if state.update(reading, hp_timestamp_ms):
-                event_logger.info(
-                    "Tower HP: %s=%d; confidence=%.2f; observed_at_ms=%.1f; confirmed_at_ms=%.1f",
-                    tower_id, state.hp, state.confidence, state.observed_at_ms, hp_timestamp_ms,
-                )
-            tower_hp[tower_id] = state.snapshot()
-        batch_errors = sorted({reading["error"] for reading in hp_readings.values()
-                               if reading["error"] and reading["error"].startswith("ocr_error:")})
-        for error in batch_errors:
-            event_logger.warning("Tower HP batch: %s", error)
-        with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
-            hp_log.write(json.dumps({"type": "observation", "frame_index": hp_frame_index,
-                                     "timestamp_ms": hp_timestamp_ms, "readings": hp_readings,
-                                     "crop_selection_scan": crop_selection_scan,
-                                     "active_crop_indices": tower_hp_active_crop_indices,
-                                     "active_crops": tower_hp_crops,
-                                     "tower_hp": tower_hp}, ensure_ascii=False) + "\n")
-        if show_tower_hp:
-            show_tower_hp_debug(frame, tower_hp_crops, hp_previews, hp_readings)
-        if not tower_hp_recognizer.is_running:
-            event_logger.error("Tower HP OCR worker stopped; OCR is disabled for this run")
-            tower_hp_sampler = None
+        if not Path(CARDS_MODEL_PATH).is_file():
+            raise FileNotFoundError(f"Cards classification model not found: {CARDS_MODEL_PATH}")
 
-    if (
-        tower_hp_sampler is not None
-        and tower_hp_async_reader is not None
-        and not tower_hp_async_reader.is_busy
-    ):
-        # A full candidate scan has priority. Between scans, OCR only receives
-        # the last highest-confidence crop selected for each tower.
-        if tower_hp_crop_selection_sampler.due(timestamp_ms):
-            tower_hp_async_reader.submit(
-                frame,
-                tower_hp_candidate_batch,
-                timestamp_ms,
-            )
-        elif tower_hp_sampler.due(timestamp_ms):
-            tower_hp_async_reader.submit(frame, tower_hp_crops, timestamp_ms)
+        model = YOLO(str(MODEL_PATH))
+        elixir_model = YOLO(str(ELIXIR_MODEL_PATH))
+        classification_cards_model = YOLO(str(CARDS_MODEL_PATH))
+        cap = cv2.VideoCapture(str(INPUT_VIDEO))
+        if not cap.isOpened():
+            raise RuntimeError(f"Cannot open video: {INPUT_VIDEO}")
 
-    # frame_cards = get_image_cards_format(frame)
-    battlefield = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
-
-    # Inference settings match process_video.py; track() is retained so IDs persist.
-    results = model.track(
-        source=battlefield,
-        persist=True,  # maintain track IDs across frames
-        imgsz=IMGSZ,
-        conf=CONF,
-        iou=IOU,
-        max_det=MAX_DET,
-        device=DEVICE,
-        quantize=QUANTIZE,
-        tracker="bytetrack.yaml",  # tracking configuration
-        project="detection_results",  # Папка для сохранения
-        name="video_tracking",
-        verbose=False,
-    )
-
-    # Elixir uses tracking only to obtain stable IDs for Kalman smoothing. Its
-    # detections never enter the unit classification branch.
-    elixir_result = elixir_model.track(
-        source=battlefield,
-        persist=True,
-        imgsz=IMGSZ,
-        conf=CONF,
-        iou=IOU,
-        max_det=MAX_DET,
-        device=DEVICE,
-        quantize=QUANTIZE,
-        tracker="bytetrack.yaml",
-        verbose=False,
-    )[0]
-
-    detected_bar_track_ids = smooth_result_boxes(
-        results[0],
-        bar_kalman_filters,
-        bar_kalman_last_seen,
-        frame_count,
-        battlefield.shape,
-    )
-    smooth_result_boxes(
-        elixir_result,
-        elixir_kalman_filters,
-        elixir_kalman_last_seen,
-        frame_count,
-        battlefield.shape,
-    )
-    # A tracker can eventually reuse a numeric ID. Drop its classification only
-    # after the associated Kalman track has expired, not during a short gap.
-    for stale_track_id in list(unit_classification_cache):
-        if stale_track_id not in bar_kalman_filters:
-            unit_classification_cache.pop(stale_track_id, None)
-
-    # Собираем данные о кадре
-    frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
-    frame_data["tower_hp"] = {tower_id: dict(state) for tower_id, state in tower_hp.items()}
-    # Current-frame track_id -> mean (B, G, R), or None for an empty crop.
-    bar_mean_colors: dict[int, tuple[float, float, float] | None] = {}
-    field_objects: list[tuple[str, int | None, float, float]] = []
-    elixir_centers: list[tuple[float, float]] = []
-    bar_detection_count = 0
-    predicted_unit_count = 0
-    elixir_detection_count = (
-        0 if elixir_result.boxes is None else len(elixir_result.boxes)
-    )
-
-    if results[0].boxes is not None and results[0].boxes.id is not None:
-        boxes = results[0].boxes.xyxy.cpu().numpy()
-        track_ids = results[0].boxes.id.int().cpu().tolist()
-        confs = results[0].boxes.conf.cpu().numpy()
-        class_ids = results[0].boxes.cls.int().cpu().tolist()
-
-        bar_detection_count = len(track_ids)
-        frame_data["num_objects"] = bar_detection_count
-        cls_text = ""
-
-        for i, (box, track_id, conf, class_id) in enumerate(
-            zip(boxes, track_ids, confs, class_ids)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        if not math.isfinite(fps) or fps <= 0:
+            raise ValueError(f"Invalid video FPS: {fps}")
+        if FPS_PROCESS is not None and (
+            not math.isfinite(FPS_PROCESS) or FPS_PROCESS <= 0
         ):
+            raise ValueError("FPS_PROCESS must be a positive number or None")
+        process_fps = fps if FPS_PROCESS is None else min(float(FPS_PROCESS), fps)
+        print(f"Video FPS: {fps:g}; processing/output FPS: {process_fps:g}")
 
-            x1, y1, x2, y2 = box
-            center_x = (x1 + x2) / 2
-            center_y = (y1 + y2) / 2
-
-            # Use original pixels: battlefield may already contain annotations.
-            roi_left = max(0, min(battlefield.shape[1], math.floor(x1)))
-            roi_top = max(0, min(battlefield.shape[0], math.floor(y1)))
-            roi_right = max(0, min(battlefield.shape[1], math.ceil(x2)))
-            roi_bottom = max(0, min(battlefield.shape[0], math.ceil(y2)))
-            mean_color_bgr = None
-            if roi_right > roi_left and roi_bottom > roi_top:
-                color_roi = frame[
-                    crop_y1 + roi_top : crop_y1 + roi_bottom,
-                    crop_x1 + roi_left : crop_x1 + roi_right,
-                ]
-                mean_color_bgr = cv2.mean(color_roi)[:3]
-            bar_mean_colors[track_id] = mean_color_bgr
-
-            # Ищем совпадающие бары и левелы
-            is_unit_detection = (
-                class_id == 1
-                and SIZE_RESCTRICTIONS[0][0] <= x2 - x1 <= SIZE_RESCTRICTIONS[1][0]
-                and SIZE_RESCTRICTIONS[0][1] <= y2 - y1 <= SIZE_RESCTRICTIONS[1][1]
-            )
-            if is_unit_detection:
-
-                bars_place[track_id].append((x1, y1, x2, y2))
-                while len(bars_place[track_id]) > LEN_POSES:
-                    bars_place[track_id].pop(0)
-
-                if bar_for_level[track_id]:
-                    pass
-                rect = (int(x1), int(y1)), (
-                    int(x2 + bar_for_level[track_id]),
-                    int(y2),
-                )
-
-                # Extract from the clean frame before drawing debug rectangles.
-                blue_rect = extract_blue_rect(
-                    battlefield,
-                    (x1, y1, x2, y2),
-                    bar_for_level[track_id],
-                )
-
-                cv2.rectangle(battlefield, *rect, (0, 0, 255), 3)
-
-                blue_left = int(
-                    (rect[0][0] + rect[1][0]) / 2 - SIZE_OF_RECT / 2
-                )
-                field_objects.append(
-                    (
-                        "blue_rect",
-                        int(track_id),
-                        blue_left + SIZE_OF_RECT / 2,
-                        rect[1][1] + SIZE_OF_RECT / 2,
+        video_size = (width, height)
+        tower_hp_crop_candidates = {}
+        if TOWER_HP_ENABLED:
+            for tower_id, regions in (
+                ("ally_1", TOWER_HP_1), ("ally_2", TOWER_HP_2),
+                ("enemy_1", TOWER_HP_ENEMY_1), ("enemy_2", TOWER_HP_ENEMY_2),
+            ):
+                if video_size not in regions:
+                    raise ValueError(
+                        f"Missing HP crop for {tower_id} at {video_size} in model_paths.py. "
+                        "Add its coordinates or set TOWER_HP_ENABLED=False."
                     )
+                configured_crops = regions[video_size]
+                if not isinstance(configured_crops, list) or not configured_crops:
+                    raise ValueError(
+                        f"HP crops for {tower_id} must be a non-empty list, "
+                        f"got: {configured_crops!r}"
+                    )
+                validated_crops = []
+                for crop_index, crop in enumerate(configured_crops):
+                    if not isinstance(crop, (tuple, list)) or len(crop) != 4:
+                        raise ValueError(
+                            f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
+                        )
+                    x1, y1, x2, y2 = crop
+                    if not (0 <= x1 < x2 <= width and 0 <= y1 < y2 <= height):
+                        raise ValueError(
+                            f"Invalid HP crop #{crop_index} for {tower_id}: {crop!r}"
+                        )
+                    validated_crops.append((x1, y1, x2, y2))
+                if (tower_id not in TOWER_HP_MAX_VALUES
+                        or not isinstance(TOWER_HP_MAX_VALUES[tower_id], int)
+                        or TOWER_HP_MAX_VALUES[tower_id] <= 0):
+                    raise ValueError(f"Set a positive integer max HP for {tower_id}")
+                tower_hp_crop_candidates[tower_id] = validated_crops
+
+        tower_hp_active_crop_indices = {
+            tower_id: 0 for tower_id in tower_hp_crop_candidates
+        }
+        tower_hp_crops = {
+            tower_id: crops[0] for tower_id, crops in tower_hp_crop_candidates.items()
+        }
+
+        if video_size not in BATTLEFIELDS:
+            raise ValueError(
+                f"Unsupported video resolution: {width}x{height}. "
+                f"Add ({width}, {height}): (x1, y1, x2, y2) to "
+                "BATTLEFIELDS in model_paths.py."
+            )
+        if video_size not in CARDS:
+            raise ValueError(
+                f"Cards crop is not configured for video resolution {width}x{height}. "
+                "Add this resolution to CARDS in model_paths.py."
+            )
+        if video_size not in ELIXIR_BAR:
+            raise ValueError(
+                f"Elixir bar crop is not configured for video resolution "
+                f"{width}x{height}. Add this resolution to ELIXIR_BAR in "
+                "model_paths.py."
+            )
+
+        crop_x1, crop_y1, crop_x2, crop_y2 = BATTLEFIELDS[video_size]
+        if not (0 <= crop_x1 < crop_x2 <= width):
+            raise ValueError(f"Invalid horizontal crop: {(crop_x1, crop_x2)} for width {width}")
+        if not (0 <= crop_y1 < crop_y2 <= height):
+            raise ValueError(f"Invalid vertical crop: {(crop_y1, crop_y2)} for height {height}")
+
+        cards_x1, cards_y1, cards_x2, cards_y2 = CARDS[video_size]
+        if not (0 <= cards_x1 < cards_x2 <= width):
+            raise ValueError(
+                f"Invalid cards horizontal crop: {(cards_x1, cards_x2)} for width {width}"
+            )
+        if not (0 <= cards_y1 < cards_y2 <= height):
+            raise ValueError(
+                f"Invalid cards vertical crop: {(cards_y1, cards_y2)} for height {height}"
+            )
+        if cards_x2 - cards_x1 < 4:
+            raise ValueError("Cards crop must be at least 4 pixels wide")
+
+        elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2 = (
+            ELIXIR_BAR[video_size]
+        )
+        if not (0 <= elixir_bar_x1 < elixir_bar_x2 <= width):
+            raise ValueError(
+                f"Invalid elixir bar horizontal crop: "
+                f"{(elixir_bar_x1, elixir_bar_x2)} for width {width}"
+            )
+        if not (0 <= elixir_bar_y1 < elixir_bar_y2 <= height):
+            raise ValueError(
+                f"Invalid elixir bar vertical crop: "
+                f"{(elixir_bar_y1, elixir_bar_y2)} for height {height}"
+            )
+
+        if write_video:
+            OUTPUT_VIDEO.parent.mkdir(parents=True, exist_ok=True)
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            out = cv2.VideoWriter(str(OUTPUT_VIDEO), fourcc, process_fps, (width, height))
+            if not out.isOpened():
+                raise RuntimeError(f"Cannot create output video: {OUTPUT_VIDEO}")
+
+        #
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Загрузка модели
+        classification_model = YOLO(
+            CLASSIFICATION_MODEL_PATH
+        )
+
+        # Предсказание
+        # predicted_class = predict_single_image(classification_model, image_path, classification_classes, device)
+        # predictions = classify_crop(
+        #     classification_model,
+        #     blue_rect,
+        #     imgsz=224,
+        #     device="0",
+        #     top_k=3,
+        #     quantize=16,
+        # )
+
+        # class_name, confidence = predictions[0]
+        # cls_text = f"{class_name} {confidence:.2f}"
+
+        # end preprocess class. model
+
+        # Для сбора статистики по кадрам
+        frame_stats = []
+        object_history = defaultdict(list)  # история позиций объектов
+
+        bars_place = defaultdict(list)
+        bar_for_level = defaultdict(int)
+        bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
+        bar_kalman_last_seen: dict[int, int] = {}
+        unit_track_memories: dict[int, UnitTrackMemory] = {}
+        unit_classification_cache: dict[int, UnitClassificationCacheEntry] = {}
+        elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
+        elixir_kalman_last_seen: dict[int, int] = {}
+        elixir_event_tracker = ElixirEventTracker(
+            video_fps=fps,
+            battlefield_width=crop_x2 - crop_x1,
+            battlefield_height=crop_y2 - crop_y1,
+        )
+        card_history_length = max(1, math.ceil(process_fps * CARD_HISTORY_MS / 1000) + 1)
+        card_histories: list[deque[CardObservation]] = [
+            deque(maxlen=card_history_length) for _ in range(CARD_COUNT)
+        ]
+        event_logger = (create_event_logger(EVENT_LOG_PATH) if write_logs
+                        else logging.getLogger("offline_rl.recognition"))
+        tower_hp_recognizer = create_tower_hp_recognizer() if TOWER_HP_ENABLED else None
+        tower_hp_async_reader = (
+            TowerHPAsyncReader(tower_hp_recognizer) if tower_hp_recognizer is not None and not synchronous_hp else None
+        )
+        tower_hp_states = {tower_id: TowerHPState() for tower_id in tower_hp_crops}
+        tower_hp = {tower_id: state.snapshot() for tower_id, state in tower_hp_states.items()}
+        tower_hp_sampler = TowerHPSampler(1000 / min(TOWER_HP_FPS, process_fps)) if TOWER_HP_ENABLED else None
+        tower_hp_crop_selection_sampler = (
+            TowerHPSampler(TOWER_HP_CROP_SELECTION_INTERVAL_MS)
+            if TOWER_HP_ENABLED
+            else None
+        )
+        tower_hp_candidate_batch = build_tower_hp_candidate_batch(
+            tower_hp_crop_candidates
+        )
+        if TOWER_HP_ENABLED and write_logs:
+            TOWER_HP_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
+                hp_log.write(json.dumps({"type": "run", "video": str(INPUT_VIDEO),
+                                         "source_fps": fps, "ocr_fps": min(TOWER_HP_FPS, process_fps),
+                                         "crop_selection_interval_ms": TOWER_HP_CROP_SELECTION_INTERVAL_MS,
+                                         "crop_candidates": tower_hp_crop_candidates,
+                                         "active_crop_indices": tower_hp_active_crop_indices,
+                                         "crops": tower_hp_crops, "ocr_backend": "paddleocr",
+                                         "model": TOWER_HP_MODEL_NAME, "device": TOWER_HP_DEVICE}) + "\n")
+        card_event_markers: list[tuple[int, int, str, int]] = []
+        card_event_marker_frames = max(1, math.ceil(fps * CARD_EVENT_MARKER_MS / 1000))
+        field_background = build_field_background()
+        if display:
+            cv2.namedWindow(FIELD_WINDOW_NAME, cv2.WINDOW_NORMAL)
+            cv2.resizeWindow(
+                FIELD_WINDOW_NAME,
+                field_background.shape[1],
+                field_background.shape[0],
+            )
+
+        processed_frames = 0
+        last_frame_index = -1
+        stopped_by_user = False
+
+        for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
+            # frame_count remains a source-video index: all ms thresholds use source fps.
+            timestamp_ms = frame_count * 1000 / fps
+            processed_frames += 1
+            last_frame_index = frame_count
+            completed_hp = tower_hp_async_reader.poll() if tower_hp_async_reader is not None else None
+            if synchronous_hp and tower_hp_recognizer is not None:
+                # Offline extraction blocks on scheduled OCR, so observations do not
+                # depend on GPU speed or when the asynchronous worker happens to finish.
+                scan_due = tower_hp_crop_selection_sampler.due(timestamp_ms)
+                hp_due = tower_hp_sampler.due(timestamp_ms)
+                if scan_due or hp_due:
+                    readings, previews = read_tower_hp(
+                        frame, tower_hp_candidate_batch if scan_due else tower_hp_crops,
+                        tower_hp_recognizer,
+                    )
+                    completed_hp = (timestamp_ms, readings, previews)
+                    if not tower_hp_recognizer.is_running:
+                        raise RuntimeError("Tower HP OCR worker stopped during trajectory extraction")
+            if completed_hp is not None:
+                hp_timestamp_ms, hp_readings, hp_previews = completed_hp
+                crop_selection_scan = any(
+                    parse_tower_hp_candidate_key(ocr_key)[1] is not None
+                    for ocr_key in hp_readings
+                )
+                if crop_selection_scan:
+                    (
+                        hp_readings,
+                        hp_previews,
+                        selected_crop_indices,
+                    ) = select_best_tower_hp_crops(
+                        hp_readings,
+                        hp_previews,
+                        tower_hp_crop_candidates,
+                        tower_hp_active_crop_indices,
+                    )
+                    tower_hp_active_crop_indices.update(selected_crop_indices)
+                    tower_hp_crops.update(
+                        {
+                            tower_id: tower_hp_crop_candidates[tower_id][crop_index]
+                            for tower_id, crop_index in selected_crop_indices.items()
+                        }
+                    )
+                hp_frame_index = round(hp_timestamp_ms * fps / 1000)
+                for tower_id, reading in hp_readings.items():
+                    state = tower_hp_states[tower_id]
+                    if state.update(reading, hp_timestamp_ms):
+                        event_logger.info(
+                            "Tower HP: %s=%d; confidence=%.2f; observed_at_ms=%.1f; confirmed_at_ms=%.1f",
+                            tower_id, state.hp, state.confidence, state.observed_at_ms, hp_timestamp_ms,
+                        )
+                    tower_hp[tower_id] = state.snapshot()
+                batch_errors = sorted({reading["error"] for reading in hp_readings.values()
+                                       if reading["error"] and reading["error"].startswith("ocr_error:")})
+                for error in batch_errors:
+                    event_logger.warning("Tower HP batch: %s", error)
+                if write_logs:
+                    with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
+                        hp_log.write(json.dumps({"type": "observation", "frame_index": hp_frame_index,
+                                                 "timestamp_ms": hp_timestamp_ms, "readings": hp_readings,
+                                                 "crop_selection_scan": crop_selection_scan,
+                                                 "active_crop_indices": tower_hp_active_crop_indices,
+                                                 "active_crops": tower_hp_crops,
+                                                 "tower_hp": tower_hp}, ensure_ascii=False) + "\n")
+                if display and show_tower_hp:
+                    show_tower_hp_debug(frame, tower_hp_crops, hp_previews, hp_readings)
+                if not tower_hp_recognizer.is_running:
+                    event_logger.error("Tower HP OCR worker stopped; OCR is disabled for this run")
+                    tower_hp_sampler = None
+
+            if (
+                tower_hp_sampler is not None
+                and tower_hp_async_reader is not None
+                and not tower_hp_async_reader.is_busy
+            ):
+                # A full candidate scan has priority. Between scans, OCR only receives
+                # the last highest-confidence crop selected for each tower.
+                if tower_hp_crop_selection_sampler.due(timestamp_ms):
+                    tower_hp_async_reader.submit(
+                        frame,
+                        tower_hp_candidate_batch,
+                        timestamp_ms,
+                    )
+                elif tower_hp_sampler.due(timestamp_ms):
+                    tower_hp_async_reader.submit(frame, tower_hp_crops, timestamp_ms)
+
+            # frame_cards = get_image_cards_format(frame)
+            battlefield = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
+
+            # Inference settings match process_video.py; track() is retained so IDs persist.
+            results = model.track(
+                source=battlefield,
+                persist=True,  # maintain track IDs across frames
+                imgsz=IMGSZ,
+                conf=CONF,
+                iou=IOU,
+                max_det=MAX_DET,
+                device=DEVICE,
+                quantize=QUANTIZE,
+                tracker="bytetrack.yaml",  # tracking configuration
+                project="detection_results",  # Папка для сохранения
+                name="video_tracking",
+                verbose=False,
+            )
+
+            # Elixir uses tracking only to obtain stable IDs for Kalman smoothing. Its
+            # detections never enter the unit classification branch.
+            elixir_result = elixir_model.track(
+                source=battlefield,
+                persist=True,
+                imgsz=IMGSZ,
+                conf=CONF,
+                iou=IOU,
+                max_det=MAX_DET,
+                device=DEVICE,
+                quantize=QUANTIZE,
+                tracker="bytetrack.yaml",
+                verbose=False,
+            )[0]
+
+            detected_bar_track_ids = smooth_result_boxes(
+                results[0],
+                bar_kalman_filters,
+                bar_kalman_last_seen,
+                frame_count,
+                battlefield.shape,
+            )
+            smooth_result_boxes(
+                elixir_result,
+                elixir_kalman_filters,
+                elixir_kalman_last_seen,
+                frame_count,
+                battlefield.shape,
+            )
+            # A tracker can eventually reuse a numeric ID. Drop its classification only
+            # after the associated Kalman track has expired, not during a short gap.
+            for stale_track_id in list(unit_classification_cache):
+                if stale_track_id not in bar_kalman_filters:
+                    unit_classification_cache.pop(stale_track_id, None)
+
+            # Собираем данные о кадре
+            frame_data = {
+                "frame_number": frame_count, "timestamp_ms": timestamp_ms,
+                "source_fps": fps, "processing_fps": process_fps,
+                "num_objects": 0, "objects": [], "events": [],
+            }
+            frame_data["tower_hp"] = {tower_id: dict(state) for tower_id, state in tower_hp.items()}
+            # Current-frame track_id -> mean (B, G, R), or None for an empty crop.
+            bar_mean_colors: dict[int, tuple[float, float, float] | None] = {}
+            field_objects: list[tuple[str, int | None, float, float]] = []
+            elixir_centers: list[tuple[float, float]] = []
+            bar_detection_count = 0
+            predicted_unit_count = 0
+            elixir_detection_count = (
+                0 if elixir_result.boxes is None else len(elixir_result.boxes)
+            )
+
+            if results[0].boxes is not None and results[0].boxes.id is not None:
+                boxes = results[0].boxes.xyxy.cpu().numpy()
+                track_ids = results[0].boxes.id.int().cpu().tolist()
+                confs = results[0].boxes.conf.cpu().numpy()
+                class_ids = results[0].boxes.cls.int().cpu().tolist()
+
+                bar_detection_count = len(track_ids)
+                frame_data["num_objects"] = bar_detection_count
+                cls_text = ""
+
+                for i, (box, track_id, conf, class_id) in enumerate(
+                    zip(boxes, track_ids, confs, class_ids)
+                ):
+
+                    x1, y1, x2, y2 = box
+                    center_x = (x1 + x2) / 2
+                    center_y = (y1 + y2) / 2
+
+                    # Use original pixels: battlefield may already contain annotations.
+                    roi_left = max(0, min(battlefield.shape[1], math.floor(x1)))
+                    roi_top = max(0, min(battlefield.shape[0], math.floor(y1)))
+                    roi_right = max(0, min(battlefield.shape[1], math.ceil(x2)))
+                    roi_bottom = max(0, min(battlefield.shape[0], math.ceil(y2)))
+                    mean_color_bgr = None
+                    if roi_right > roi_left and roi_bottom > roi_top:
+                        color_roi = frame[
+                            crop_y1 + roi_top : crop_y1 + roi_bottom,
+                            crop_x1 + roi_left : crop_x1 + roi_right,
+                        ]
+                        mean_color_bgr = cv2.mean(color_roi)[:3]
+                    bar_mean_colors[track_id] = mean_color_bgr
+
+                    # Ищем совпадающие бары и левелы
+                    is_unit_detection = (
+                        class_id == 1
+                        and SIZE_RESCTRICTIONS[0][0] <= x2 - x1 <= SIZE_RESCTRICTIONS[1][0]
+                        and SIZE_RESCTRICTIONS[0][1] <= y2 - y1 <= SIZE_RESCTRICTIONS[1][1]
+                    )
+                    if is_unit_detection:
+
+                        bars_place[track_id].append((x1, y1, x2, y2))
+                        while len(bars_place[track_id]) > LEN_POSES:
+                            bars_place[track_id].pop(0)
+
+                        if bar_for_level[track_id]:
+                            pass
+                        rect = (int(x1), int(y1)), (
+                            int(x2 + bar_for_level[track_id]),
+                            int(y2),
+                        )
+
+                        # Extract from the clean frame before drawing debug rectangles.
+                        blue_rect = extract_blue_rect(
+                            frame[crop_y1:crop_y2, crop_x1:crop_x2],
+                            (x1, y1, x2, y2),
+                            bar_for_level[track_id],
+                        )
+
+                        cv2.rectangle(battlefield, *rect, (0, 0, 255), 3)
+
+                        blue_left = int(
+                            (rect[0][0] + rect[1][0]) / 2 - SIZE_OF_RECT / 2
+                        )
+                        field_objects.append(
+                            (
+                                "blue_rect",
+                                int(track_id),
+                                blue_left + SIZE_OF_RECT / 2,
+                                rect[1][1] + SIZE_OF_RECT / 2,
+                            )
+                        )
+                        cv2.rectangle(
+                            battlefield,
+                            (blue_left, rect[1][1]),
+                            (
+                                blue_left + SIZE_OF_RECT,
+                                rect[1][1] + SIZE_OF_RECT,
+                            ),
+                            (255, 0, 0),
+                            2,
+                        )
+
+                        # predicted_class = predict_single_image(
+                        #     classification_model,
+                        #     blue_rect,
+                        #     classification_classes,
+                        #     device,
+                        #     verbose=False,
+                        # )
+                        classification_state = unit_classification_cache.get(
+                            int(track_id)
+                        )
+                        if classification_state is None and blue_rect is not None:
+                            classification_state = UnitClassificationCacheEntry()
+                            unit_classification_cache[int(track_id)] = classification_state
+
+                        if (
+                            blue_rect is not None
+                            and classification_state is not None
+                            and classification_state.classification_due(timestamp_ms)
+                        ):
+                            predictions = classify_crop(
+                                classification_model,
+                                blue_rect,
+                                imgsz=224,
+                                device="0",
+                                top_k=1,
+                                quantize=16,
+                            )
+                            class_name, confidence = predictions[0]
+                            classification_state.add(
+                                class_name,
+                                confidence,
+                                timestamp_ms,
+                            )
+
+                        cls_text = (
+                            classification_state.display_text
+                            if classification_state is not None
+                            else "None"
+                        )
+                        unit_track_memories[int(track_id)] = UnitTrackMemory(
+                            confidence=float(conf),
+                            mean_color_bgr=mean_color_bgr,
+                            classification_text=cls_text,
+                        )
+                    else:
+                        cls_text = "None"
+                    if class_id == 0:
+                        x_left = x1
+                        y_left = center_y
+                        for key, level_bar in bars_place.items():
+                            count_good_pos = 0
+                            sum_len = 0
+                            for pos in level_bar:
+                                x_level1, y_level1, x_level2, y_level2 = pos
+
+                                if (
+                                    y_level1 <= y_left <= y_level2
+                                    and (x_level1 + x_level2) / 2
+                                    <= x_left
+                                    <= (x_level1 + x_level2) / 2 + x_level2 - x_level1
+                                ):
+
+                                    count_good_pos += 1
+                                    sum_len += x2 - x1
+
+                            if len(level_bar) >= LEN_POSES and count_good_pos > LEN_POSES / 2:
+                                bar_for_level[key] = sum_len / count_good_pos
+
+                    # Данные объекта
+                    obj_data = {
+                        "track_id": track_id,
+                        "class": model.names[class_id],
+                        "confidence": conf,
+                        "predicted": False,
+                        "mean_color_bgr": mean_color_bgr,
+                        "bbox": [x1, y1, x2, y2],
+                        "center": [center_x, center_y],
+                    }
+                    frame_data["objects"].append(obj_data)
+
+                    # Сохраняем в историю для анализа траекторий
+                    object_history[track_id].append(
+                        {
+                            "frame": frame_count,
+                            "center": (center_x, center_y),
+                            "bbox": (x1, y1, x2, y2),
+                        }
+                    )
+
+                    # Визуализация с дополнительной информацией
+                    # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                    label = f"{track_id} {cls_text}"
+                    cv2.putText(
+                        battlefield,
+                        label,
+                        (int(x1), int(y1) - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 255, 0),
+                        3,
+                    )
+
+            predicted_unit_tracks = predict_missing_unit_tracks(
+                bar_kalman_filters,
+                bar_kalman_last_seen,
+                unit_track_memories,
+                detected_bar_track_ids,
+                frame_count,
+                battlefield.shape,
+                fps,
+                process_fps,
+            )
+            predicted_unit_count = len(predicted_unit_tracks)
+            for predicted_track in predicted_unit_tracks:
+                track_id = predicted_track.track_id
+                x1, y1, x2, y2 = map(float, predicted_track.bbox)
+                bar_width = float(bar_for_level[track_id])
+                extended_right = min(float(battlefield.shape[1]), x2 + bar_width)
+                unit_center_x = (x1 + extended_right) / 2
+                unit_center_y = y2 + SIZE_OF_RECT / 2
+
+                bar_mean_colors[track_id] = predicted_track.memory.mean_color_bgr
+                field_objects.append(
+                    ("blue_rect", track_id, unit_center_x, unit_center_y)
                 )
                 cv2.rectangle(
                     battlefield,
-                    (blue_left, rect[1][1]),
+                    (round(x1), round(y1)),
+                    (round(extended_right), round(y2)),
+                    (0, 165, 255),
+                    2,
+                )
+                predicted_left = round(unit_center_x - SIZE_OF_RECT / 2)
+                cv2.rectangle(
+                    battlefield,
+                    (predicted_left, round(y2)),
                     (
-                        blue_left + SIZE_OF_RECT,
-                        rect[1][1] + SIZE_OF_RECT,
+                        predicted_left + SIZE_OF_RECT,
+                        round(y2) + SIZE_OF_RECT,
                     ),
-                    (255, 0, 0),
+                    (0, 165, 255),
+                    2,
+                )
+                cv2.putText(
+                    battlefield,
+                    (
+                        f"{track_id} {predicted_track.memory.classification_text} "
+                        f"predicted {predicted_track.confidence:.2f}"
+                    ),
+                    (round(x1), max(20, round(y1) - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 165, 255),
                     2,
                 )
 
-                # predicted_class = predict_single_image(
-                #     classification_model,
-                #     blue_rect,
-                #     classification_classes,
-                #     device,
-                #     verbose=False,
-                # )
-                classification_state = unit_classification_cache.get(
-                    int(track_id)
+                predicted_center_x = (x1 + x2) / 2
+                predicted_center_y = (y1 + y2) / 2
+                frame_data["objects"].append(
+                    {
+                        "track_id": track_id,
+                        "class": model.names[1],
+                        "confidence": predicted_track.confidence,
+                        "predicted": True,
+                        "missed_processed_frames": (
+                            predicted_track.missed_processed_frames
+                        ),
+                        "mean_color_bgr": predicted_track.memory.mean_color_bgr,
+                        "bbox": [x1, y1, x2, y2],
+                        "center": [predicted_center_x, predicted_center_y],
+                    }
                 )
-                if classification_state is None and blue_rect is not None:
-                    classification_state = UnitClassificationCacheEntry()
-                    unit_classification_cache[int(track_id)] = classification_state
+                object_history[track_id].append(
+                    {
+                        "frame": frame_count,
+                        "center": (predicted_center_x, predicted_center_y),
+                        "bbox": (x1, y1, x2, y2),
+                        "predicted": True,
+                    }
+                )
 
-                if (
-                    blue_rect is not None
-                    and classification_state is not None
-                    and classification_state.classification_due(timestamp_ms)
-                ):
-                    predictions = classify_crop(
-                        classification_model,
-                        blue_rect,
-                        imgsz=224,
-                        device="0",
-                        top_k=1,
-                        quantize=16,
+            frame_data["num_objects"] += predicted_unit_count
+
+            # Elixir detections never pass through classify_crop().
+            if elixir_result.boxes is not None:
+                for box in elixir_result.boxes:
+                    class_id = int(box.cls[0])
+                    confidence = float(box.conf[0])
+                    x1, y1, x2, y2 = map(float, box.xyxy[0].tolist())
+                    track_id = int(box.id[0]) if box.id is not None else None
+                    elixir_center = ((x1 + x2) / 2, (y1 + y2) / 2)
+                    if battlefield_position_to_field_cell(
+                        elixir_center,
+                        battlefield.shape,
+                    ) is not None:
+                        elixir_centers.append(elixir_center)
+                    frame_data["objects"].append(
+                        {
+                            "track_id": track_id,
+                            "class": elixir_result.names[class_id],
+                            "confidence": confidence,
+                            "bbox": [x1, y1, x2, y2],
+                            "center": [(x1 + x2) / 2, (y1 + y2) / 2],
+                        }
                     )
-                    class_name, confidence = predictions[0]
-                    classification_state.add(
-                        class_name,
-                        confidence,
-                        timestamp_ms,
+                battlefield = elixir_result.plot(img=battlefield)
+
+            frame_data["num_objects"] += elixir_detection_count
+
+            # Put the tracked and annotated battlefield back into the original frame.
+            output_frame = frame.copy()
+            output_frame[crop_y1:crop_y2, crop_x1:crop_x2] = battlefield
+            draw_tower_hp(output_frame, tower_hp_crops, tower_hp_states)
+
+            elixir_bar_reading = recognize_elixir_bar(
+                frame,
+                (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
+            )
+            frame_data["elixir_bar"] = elixir_bar_reading
+            draw_elixir_bar_reading(
+                output_frame,
+                (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
+                elixir_bar_reading,
+            )
+
+            card_images, card_slots = split_cards_from_frame(
+                frame,
+                (cards_x1, cards_y1, cards_x2, cards_y2),
+            )
+            card_predictions = classify_cards(classification_cards_model, card_images)
+            remember_card_predictions(card_histories, card_predictions, frame_count)
+            draw_card_predictions(
+                output_frame,
+                card_predictions,
+                card_slots,
+                cards_y1,
+            )
+
+            frame_data["hand"] = [
+                {"slot": slot, "card": name, "confidence": float(confidence)}
+                for slot, (name, confidence) in enumerate(card_predictions, start=1)
+            ]
+            frame_data["elixir_centers"] = elixir_centers
+            frame_data["units"] = []
+            unit_boxes = {int(obj["track_id"]): obj for obj in frame_data["objects"]
+                          if obj.get("track_id") is not None and obj["class"] == model.names[1]}
+            for _, track_id, center_x, center_y in field_objects:
+                cell = battlefield_position_to_field_cell((center_x, center_y), battlefield.shape)
+                if cell is None:
+                    continue
+                cache = unit_classification_cache.get(track_id)
+                color = bar_mean_colors.get(track_id)
+                side = "unknown"
+                if color is not None:
+                    blue_score = color[0] * FIELD_COLOR_BLUE_WEIGHT
+                    red_score = color[2] * FIELD_COLOR_RED_WEIGHT
+                    if blue_score != red_score:
+                        side = "ally" if blue_score > red_score else "enemy"
+                obj = unit_boxes.get(track_id, {})
+                frame_data["units"].append({
+                    "track_id": int(track_id), "unit": cache.class_name if cache else "unknown",
+                    "unit_confidence": float(cache.confidence) if cache else 0.0,
+                    "side": side, "column": int(cell[0]), "row": int(cell[1]),
+                    "center": [float(center_x), float(center_y)],
+                    "bbox": [float(value) for value in obj.get("bbox", [])],
+                    "detector_confidence": float(obj.get("confidence", 0.0)),
+                    "predicted_by_kalman": bool(obj.get("predicted", False)),
+                })
+
+            confirmed_events = elixir_event_tracker.update(elixir_centers, frame_count)
+            for event in confirmed_events:
+                mean_position = event.mean_position
+                cell = battlefield_position_to_field_cell(
+                    mean_position,
+                    battlefield.shape,
+                )
+                if cell is None:
+                    continue
+                card_match = resolve_played_card(
+                    card_histories,
+                    event.first_frame,
+                    event.last_frame,
+                    fps,
+                    sampling_fps=process_fps,
+                    return_details=True,
+                )
+                card_name, card_slot, card_confidence = (
+                    card_match["card"], card_match["slot"], card_match["confidence"]
+                )
+                column, row = cell
+                frame_data["events"].append({
+                    **card_match,
+                    "first_frame": event.first_frame, "confirmed_frame": frame_count,
+                    "timestamp_ms": event.first_frame * 1000 / fps,
+                    "confirmed_at_ms": timestamp_ms,
+                    "action_timestamp_ms": (
+                        card_match["empty_frame"] * 1000 / fps
+                        if card_match["empty_frame"] is not None
+                        else event.first_frame * 1000 / fps
+                    ),
+                    "column": column, "row": row,
+                    "mean_position": list(mean_position),
+                    "detections": len(event.positions),
+                })
+                card_event_markers.append(
+                    (column, row, card_name, frame_count + card_event_marker_frames)
+                )
+                duration_ms = round(
+                    (event.last_frame - event.first_frame) * 1000 / fps
+                )
+                battle_time_ms = round(event.first_frame * 1000 / fps)
+                event_logger.info(
+                    "Сыграна карта: %s; слот=%s; уверенность=%.2f; "
+                    "клетка=(столбец=%d, строка=%d); "
+                    "средняя позиция=(%.1f, %.1f); время_боя=%d мс; "
+                    "длительность=%d мс; детекций=%d",
+                    card_name,
+                    card_slot if card_slot is not None else "?",
+                    card_confidence,
+                    column,
+                    row,
+                    mean_position[0],
+                    mean_position[1],
+                    battle_time_ms,
+                    duration_ms,
+                    len(event.positions),
+                )
+
+            if observation_callback is not None:
+                observation_callback(frame_data)
+            if display:
+                # Показываем номер кадра
+                cv2.putText(
+                    output_frame,
+                    f"Frame: {frame_count}",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                )
+                cv2.putText(
+                    output_frame,
+                    (
+                        f"Bars: {bar_detection_count} | Predicted: {predicted_unit_count} "
+                        f"| Elixir: {elixir_detection_count}"
+                    ),
+                    (10, 65),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (255, 255, 255),
+                    2,
+                )
+                frame_height, frame_width = output_frame.shape[:2]
+                new_width = max(1, round(frame_width * TRACKING_WINDOW_SCALE))
+                new_height = max(1, round(frame_height * TRACKING_WINDOW_SCALE))
+                resized_frame = cv2.resize(output_frame, (new_width, new_height))
+                field_frame = draw_objects_on_field(
+                    field_background,
+                    field_objects,
+                    battlefield.shape,
+                    bar_mean_colors,
+                )
+                cv2.imshow("Tracking", resized_frame)
+                draw_card_event_markers(field_frame, card_event_markers, frame_count)
+                cv2.imshow(FIELD_WINDOW_NAME, field_frame)
+                if show_battlefield:
+                    battlefield_height, battlefield_width = battlefield.shape[:2]
+                    debug_width = min(BATTLEFIELD_DEBUG_WIDTH, battlefield_width)
+                    debug_height = max(
+                        1,
+                        round(battlefield_height * debug_width / battlefield_width),
                     )
+                    battlefield_preview = cv2.resize(
+                        battlefield,
+                        (debug_width, debug_height),
+                        interpolation=cv2.INTER_AREA,
+                    )
+                    cv2.imshow(BATTLEFIELD_DEBUG_WINDOW, battlefield_preview)
+                if show_cards:
+                    cards_preview = frame[cards_y1:cards_y2, cards_x1:cards_x2].copy()
+                    local_card_slots = [
+                        (slot_x1 - cards_x1, slot_x2 - cards_x1)
+                        for slot_x1, slot_x2 in card_slots
+                    ]
+                    for slot_x1, slot_x2 in local_card_slots:
+                        cv2.rectangle(
+                            cards_preview,
+                            (slot_x1, 0),
+                            (slot_x2 - 1, cards_preview.shape[0] - 1),
+                            (255, 255, 0),
+                            2,
+                        )
+                    draw_card_predictions(
+                        cards_preview,
+                        card_predictions,
+                        local_card_slots,
+                        35,
+                    )
+                    cv2.imshow(CARDS_DEBUG_WINDOW, cards_preview)
 
-                cls_text = (
-                    classification_state.display_text
-                    if classification_state is not None
-                    else "None"
-                )
-                unit_track_memories[int(track_id)] = UnitTrackMemory(
-                    confidence=float(conf),
-                    mean_color_bgr=mean_color_bgr,
-                    classification_text=cls_text,
-                )
-            else:
-                cls_text = "None"
-            if class_id == 0:
-                x_left = x1
-                y_left = center_y
-                for key, level_bar in bars_place.items():
-                    count_good_pos = 0
-                    sum_len = 0
-                    for pos in level_bar:
-                        x_level1, y_level1, x_level2, y_level2 = pos
+            if out is not None:
+                out.write(output_frame)
+            if display and cv2.waitKey(1) & 0xFF == ord("q"):
+                stopped_by_user = True
+                break
 
-                        if (
-                            y_level1 <= y_left <= y_level2
-                            and (x_level1 + x_level2) / 2
-                            <= x_left
-                            <= (x_level1 + x_level2) / 2 + x_level2 - x_level1
-                        ):
+        return {
+            "source_fps": fps, "processing_fps": process_fps,
+            "source_frame_count": int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+            "decoded_frame_count": int(cap.get(cv2.CAP_PROP_POS_FRAMES)),
+            "processed_frames": processed_frames, "last_frame_index": last_frame_index,
+            "stopped_by_user": stopped_by_user, "resolution": [width, height],
+            "crops": {"battlefield": BATTLEFIELDS[video_size], "cards": CARDS[video_size],
+                      "elixir_bar": ELIXIR_BAR[video_size],
+                      "tower_hp": tower_hp_crop_candidates},
+            "models": {"bars": str(MODEL_PATH), "elixir": str(ELIXIR_MODEL_PATH),
+                       "units": str(CLASSIFICATION_MODEL_PATH), "cards": str(CARDS_MODEL_PATH)},
+            "recognition_config": {
+                name: value for name, value in globals().items()
+                if name.startswith(("ELIXIR_", "CARD_", "UNIT_CLASSIFICATION_", "FIELD_COLOR_", "TOWER_HP_"))
+                and isinstance(value, (int, float, bool, str, type(None)))
+            },
+            "vocabulary": {"units": classification_model.names, "cards": classification_cards_model.names},
+        }
 
-                            count_good_pos += 1
-                            sum_len += x2 - x1
+    finally:
+        if cap is not None:
+            cap.release()
+        if out is not None:
+            out.release()
+        if tower_hp_async_reader is not None:
+            tower_hp_async_reader.close()
+        elif tower_hp_recognizer is not None:
+            tower_hp_recognizer.close()
+        if display:
+            cv2.destroyAllWindows()
 
-                    if len(level_bar) >= LEN_POSES and count_good_pos > LEN_POSES / 2:
-                        bar_for_level[key] = sum_len / count_good_pos
 
-            # Данные объекта
-            obj_data = {
-                "track_id": track_id,
-                "class": model.names[class_id],
-                "confidence": conf,
-                "predicted": False,
-                "mean_color_bgr": mean_color_bgr,
-                "bbox": [x1, y1, x2, y2],
-                "center": [center_x, center_y],
-            }
-            frame_data["objects"].append(obj_data)
-
-            # Сохраняем в историю для анализа траекторий
-            object_history[track_id].append(
-                {
-                    "frame": frame_count,
-                    "center": (center_x, center_y),
-                    "bbox": (x1, y1, x2, y2),
-                }
-            )
-
-            # Визуализация с дополнительной информацией
-            # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-            label = f"{track_id} {cls_text}"
-            cv2.putText(
-                battlefield,
-                label,
-                (int(x1), int(y1) - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 255, 0),
-                3,
-            )
-
-    predicted_unit_tracks = predict_missing_unit_tracks(
-        bar_kalman_filters,
-        bar_kalman_last_seen,
-        unit_track_memories,
-        detected_bar_track_ids,
-        frame_count,
-        battlefield.shape,
-        fps,
-        process_fps,
-    )
-    predicted_unit_count = len(predicted_unit_tracks)
-    for predicted_track in predicted_unit_tracks:
-        track_id = predicted_track.track_id
-        x1, y1, x2, y2 = map(float, predicted_track.bbox)
-        bar_width = float(bar_for_level[track_id])
-        extended_right = min(float(battlefield.shape[1]), x2 + bar_width)
-        unit_center_x = (x1 + extended_right) / 2
-        unit_center_y = y2 + SIZE_OF_RECT / 2
-
-        bar_mean_colors[track_id] = predicted_track.memory.mean_color_bgr
-        field_objects.append(
-            ("blue_rect", track_id, unit_center_x, unit_center_y)
-        )
-        cv2.rectangle(
-            battlefield,
-            (round(x1), round(y1)),
-            (round(extended_right), round(y2)),
-            (0, 165, 255),
-            2,
-        )
-        predicted_left = round(unit_center_x - SIZE_OF_RECT / 2)
-        cv2.rectangle(
-            battlefield,
-            (predicted_left, round(y2)),
-            (
-                predicted_left + SIZE_OF_RECT,
-                round(y2) + SIZE_OF_RECT,
-            ),
-            (0, 165, 255),
-            2,
-        )
-        cv2.putText(
-            battlefield,
-            (
-                f"{track_id} {predicted_track.memory.classification_text} "
-                f"predicted {predicted_track.confidence:.2f}"
-            ),
-            (round(x1), max(20, round(y1) - 10)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 165, 255),
-            2,
-        )
-
-        predicted_center_x = (x1 + x2) / 2
-        predicted_center_y = (y1 + y2) / 2
-        frame_data["objects"].append(
-            {
-                "track_id": track_id,
-                "class": model.names[1],
-                "confidence": predicted_track.confidence,
-                "predicted": True,
-                "missed_processed_frames": (
-                    predicted_track.missed_processed_frames
-                ),
-                "mean_color_bgr": predicted_track.memory.mean_color_bgr,
-                "bbox": [x1, y1, x2, y2],
-                "center": [predicted_center_x, predicted_center_y],
-            }
-        )
-        object_history[track_id].append(
-            {
-                "frame": frame_count,
-                "center": (predicted_center_x, predicted_center_y),
-                "bbox": (x1, y1, x2, y2),
-                "predicted": True,
-            }
-        )
-
-    frame_data["num_objects"] += predicted_unit_count
-
-    # Elixir detections never pass through classify_crop().
-    if elixir_result.boxes is not None:
-        for box in elixir_result.boxes:
-            class_id = int(box.cls[0])
-            confidence = float(box.conf[0])
-            x1, y1, x2, y2 = map(float, box.xyxy[0].tolist())
-            track_id = int(box.id[0]) if box.id is not None else None
-            elixir_center = ((x1 + x2) / 2, (y1 + y2) / 2)
-            if battlefield_position_to_field_cell(
-                elixir_center,
-                battlefield.shape,
-            ) is not None:
-                elixir_centers.append(elixir_center)
-            frame_data["objects"].append(
-                {
-                    "track_id": track_id,
-                    "class": elixir_result.names[class_id],
-                    "confidence": confidence,
-                    "bbox": [x1, y1, x2, y2],
-                    "center": [(x1 + x2) / 2, (y1 + y2) / 2],
-                }
-            )
-        battlefield = elixir_result.plot(img=battlefield)
-
-    frame_data["num_objects"] += elixir_detection_count
-
-    # Put the tracked and annotated battlefield back into the original frame.
-    output_frame = frame.copy()
-    output_frame[crop_y1:crop_y2, crop_x1:crop_x2] = battlefield
-    draw_tower_hp(output_frame, tower_hp_crops, tower_hp_states)
-
-    elixir_bar_reading = recognize_elixir_bar(
-        frame,
-        (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
-    )
-    frame_data["elixir_bar"] = elixir_bar_reading
-    draw_elixir_bar_reading(
-        output_frame,
-        (elixir_bar_x1, elixir_bar_y1, elixir_bar_x2, elixir_bar_y2),
-        elixir_bar_reading,
-    )
-
-    card_images, card_slots = split_cards_from_frame(
-        frame,
-        (cards_x1, cards_y1, cards_x2, cards_y2),
-    )
-    card_predictions = classify_cards(classification_cards_model, card_images)
-    remember_card_predictions(card_histories, card_predictions, frame_count)
-    draw_card_predictions(
-        output_frame,
-        card_predictions,
-        card_slots,
-        cards_y1,
-    )
-
-    confirmed_events = elixir_event_tracker.update(elixir_centers, frame_count)
-    for event in confirmed_events:
-        mean_position = event.mean_position
-        cell = battlefield_position_to_field_cell(
-            mean_position,
-            battlefield.shape,
-        )
-        if cell is None:
-            continue
-        card_name, card_slot, card_confidence = resolve_played_card(
-            card_histories,
-            event.first_frame,
-            event.last_frame,
-            fps,
-            sampling_fps=process_fps,
-        )
-        column, row = cell
-        card_event_markers.append(
-            (column, row, card_name, frame_count + card_event_marker_frames)
-        )
-        duration_ms = round(
-            (event.last_frame - event.first_frame) * 1000 / fps
-        )
-        battle_time_ms = round(event.first_frame * 1000 / fps)
-        event_logger.info(
-            "Сыграна карта: %s; слот=%s; уверенность=%.2f; "
-            "клетка=(столбец=%d, строка=%d); "
-            "средняя позиция=(%.1f, %.1f); время_боя=%d мс; "
-            "длительность=%d мс; детекций=%d",
-            card_name,
-            card_slot if card_slot is not None else "?",
-            card_confidence,
-            column,
-            row,
-            mean_position[0],
-            mean_position[1],
-            battle_time_ms,
-            duration_ms,
-            len(event.positions),
-        )
-
-    # Показываем номер кадра
-    cv2.putText(
-        output_frame,
-        f"Frame: {frame_count}",
-        (10, 30),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (255, 255, 255),
-        2,
-    )
-    cv2.putText(
-        output_frame,
-        (
-            f"Bars: {bar_detection_count} | Predicted: {predicted_unit_count} "
-            f"| Elixir: {elixir_detection_count}"
-        ),
-        (10, 65),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.8,
-        (255, 255, 255),
-        2,
-    )
-    frame_height, frame_width = output_frame.shape[:2]
-    new_width = max(1, round(frame_width * TRACKING_WINDOW_SCALE))
-    new_height = max(1, round(frame_height * TRACKING_WINDOW_SCALE))
-    resized_frame = cv2.resize(output_frame, (new_width, new_height))
-    field_frame = draw_objects_on_field(
-        field_background,
-        field_objects,
-        battlefield.shape,
-        bar_mean_colors,
-    )
-    cv2.imshow("Tracking", resized_frame)
-    draw_card_event_markers(field_frame, card_event_markers, frame_count)
-    cv2.imshow(FIELD_WINDOW_NAME, field_frame)
-    if show_battlefield:
-        battlefield_height, battlefield_width = battlefield.shape[:2]
-        debug_width = min(BATTLEFIELD_DEBUG_WIDTH, battlefield_width)
-        debug_height = max(
-            1,
-            round(battlefield_height * debug_width / battlefield_width),
-        )
-        battlefield_preview = cv2.resize(
-            battlefield,
-            (debug_width, debug_height),
-            interpolation=cv2.INTER_AREA,
-        )
-        cv2.imshow(BATTLEFIELD_DEBUG_WINDOW, battlefield_preview)
-    if show_cards:
-        cards_preview = frame[cards_y1:cards_y2, cards_x1:cards_x2].copy()
-        local_card_slots = [
-            (slot_x1 - cards_x1, slot_x2 - cards_x1)
-            for slot_x1, slot_x2 in card_slots
-        ]
-        for slot_x1, slot_x2 in local_card_slots:
-            cv2.rectangle(
-                cards_preview,
-                (slot_x1, 0),
-                (slot_x2 - 1, cards_preview.shape[0] - 1),
-                (255, 255, 0),
-                2,
-            )
-        draw_card_predictions(
-            cards_preview,
-            card_predictions,
-            local_card_slots,
-            35,
-        )
-        cv2.imshow(CARDS_DEBUG_WINDOW, cards_preview)
-
-    out.write(output_frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
-out.release()
-if tower_hp_async_reader is not None:
-    tower_hp_async_reader.close()
+if __name__ == "__main__":
+    run_video_prediction()

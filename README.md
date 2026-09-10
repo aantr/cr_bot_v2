@@ -1,3 +1,173 @@
+## Offline RL trajectories
+
+Run from `v2` with its virtual environment. Each video must contain one complete
+battle at normal playback speed; trim menus or unrelated footage beforehand.
+The result is for the player whose four cards are visible at the bottom.
+
+```powershell
+python build_trajectories.py battle.mp4 --result win
+python build_trajectories.py battle.mp4 --result loss --output-dir my_trajectories
+```
+
+The implementation is in `offline_rl/build_trajectories.py`; the `v2` entry
+point forwards to it. `--result` accepts `win`, `loss` and `draw`.
+Models, crops and recognition thresholds come from the shared
+`predict_video_kalman.py` pipeline and `model_paths.py`. No preview or annotated
+video is produced. OCR runs synchronously at its configured video-time deadlines.
+
+Default output: `offline_rl/trajectories/<video-stem>-<sha256-prefix>.json`.
+An existing trajectory is only replaced with `--overwrite`. Each JSON contains:
+
+- `metadata`: source SHA256, resolution, models, vocabularies, crops, thresholds,
+  field layout and processing time;
+- `observations`: timestamp/frame index, classified units and their confidence,
+  side, 1-based row/column, Kalman flags, hand slots, elixir and confirmed tower HP;
+- `field_cells` within each observation: sparse unit counts by cell, side and
+  class, preserving multiple units in a cell. Elixir drops are excluded;
+- `transitions`: adjacent `state_index`/`next_state_index`, actual `dt_ms`,
+  action, `action_valid`, invalid reasons, reward components, terminal flag,
+  return-to-go and discounted return-to-go;
+- `events`, `reward_evidence`, `uncertainty_intervals` and `metrics`.
+
+OpenCV may decode slightly fewer frames than the container reports. The default
+EOF tolerance requires the shortfall to be **both** at most 1 second and at most
+2% of the reported frame count. Accepted differences appear in
+`metadata.video_eof` and `metrics.warnings`. No frames are fabricated; the supplied
+battle result is applied to the last processed state. A larger shortfall still
+fails rather than treating a substantially interrupted recording as complete.
+Adjust `--eof-tolerance-seconds` / `--eof-tolerance-fraction` when needed;
+`--eof-tolerance-seconds 0` requires the reported count to be reached.
+
+Recognition defaults to 30 Hz (`--detection-fps`); states default to 5 Hz
+(`--state-fps`). The last processed frame is retained. A play is assigned to
+the state strictly before its inferred empty-slot time, not the frame that
+confirms the elixir event 300 ms later. Future card/HP classifications are never
+backfilled into earlier states. Coordinates and hand slots are 1-based;
+row 1 is at the top, column 1 at the left; `#` cells are accepted.
+
+Unknown cards, low confidence, mismatched pre-action hands, multiple actions in
+one interval and reused empty transitions are masked with `action_valid=false`.
+Unmatched empty slots and apparent elixir spends also mask nearby intervals.
+Use this mask for action losses; do not delete those intervals and collapse
+elapsed time. No-op labels are inferred and can still contain missed detections.
+
+Default reward per transition:
+
+```text
+r = (enemy_damage - ally_damage) / 1000
+    + (enemy_towers_destroyed - ally_towers_destroyed)
+    + terminal_reward
+
+terminal_reward = +5 for win, -5 for loss, 0 for draw (last transition only)
+```
+
+Only confirmed OCR readings of the four side towers contribute damage.
+The first confirmed HP is a baseline; missing/stale text is never zero.
+Each decrease below a tower's previously accepted minimum is rewarded once,
+preventing repeated rewards from high/low OCR flicker. Increases are ignored.
+A single drop greater than 2500 HP is rejected as suspect. Destruction requires
+a confirmed zero. These conservative rules can miss real healing or large hits;
+there is no king-tower/destruction-image recognizer in this version.
+The terminal outcome still works if HP is unavailable.
+
+Weights/filters are configurable via `--damage-scale`, `--tower-reward`,
+`--outcome-reward`, `--max-hp-drop` and `--min-card-confidence`.
+`--no-tower-hp` explicitly disables OCR and produces terminal-only rewards.
+Discounting uses `gamma_per_second ** (dt_ms / 1000)`, default
+`--gamma-per-second 0.99`; terminal transitions have zero bootstrap discount.
+Ordinary return-to-go is the undiscounted sum of future rewards.
+
+Metrics include resolved events, valid play/no-op counts, valid action fraction,
+invalid reasons, unmatched hand transitions, HP coverage per tower, accepted
+damage, total reward, unknown unit fraction and Kalman prediction fraction.
+These measure dataset quality, not detector accuracy or policy win rate.
+The supplied result is a label, not an OCR prediction. Game clock/phase are
+currently unknown, and timestamp is elapsed video time.
+
+Split training/validation by `source_sha256` (whole battles), never by frames.
+For policy evaluation later, use held-out action accuracy/card accuracy,
+coordinate error on valid plays, and actual win rate in separately run games.
+
+## PyTorch trajectory dataset
+
+`offline_rl/dataset.py` loads the trajectory JSONs and creates causal windows
+without running recognition. From `v2`, inspect a real batch with:
+
+```powershell
+python offline_rl/dataset.py offline_rl/trajectories --sequence-length 32 --batch-size 4
+```
+
+Use directly from Python (works with one battle):
+
+```python
+from torch.utils.data import DataLoader
+from offline_rl.dataset import TrajectoryDataset
+
+dataset = TrajectoryDataset("offline_rl/trajectories", sequence_length=32)
+loader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0)
+batch = next(iter(loader))
+encoding = dataset.encoding_config()  # Store alongside the model checkpoint.
+```
+
+There is one window ending at every transition; early windows are padded on the
+right. Windows never cross battles. By default `supervise="last"` trains only on
+the final real step of each window, so overlapping context is not supervised
+repeatedly. `supervise="all"` enables losses at all valid real steps instead.
+`stride` can subsample ending steps; the final transition is always included.
+Masked windows remain in the dataset; skip an action-loss update when its batch
+has no true `loss_mask` entries. Mean cross entropy over only ignored targets
+would otherwise produce NaN.
+
+`states` contains normalized grid counts (ally/enemy/unknown channels), individual
+unit class IDs, sides, zero-based cell coordinates, classification/detection
+confidence, Kalman flags and a unit mask. Overlapping units are preserved.
+Arbitrary track IDs are not model features. `max_units=128` sets the padded unit
+capacity; exceeding it raises an error asking to increase capacity.
+`terrain_mask` marks `#` cells but does not forbid placing objects there.
+
+Other state tensors contain four hand IDs/confidences, elixir, four side-tower
+HPs, HP known/fresh masks and observation age, elapsed time, previous elapsed
+step duration and optional remaining game time/phase. Missing HP has a false
+known mask; confirmed zero has a true known mask. A retained stale value has a
+false fresh mask. `hand_nonempty_mask` is not an elixir-affordability/legality mask.
+Normalization uses fixed configurable scales from `Normalization`, shared
+between training, validation and prediction; it never divides time by a battle's
+eventual length or fits statistics on validation data.
+
+`previous_actions` and `previous_rewards` are shifted across the full battle
+before slicing windows. Episode start uses BOS. A masked or out-of-vocabulary
+previous action becomes UNK with all card/coordinate fields cleared; its observed
+reward remains available independently. Targets contain `action_type` (0=noop,
+1=play), `card_id`, `card_slot` (0..3), `row` (0..31) and `column` (0..17).
+Unavailable or unsupervised targets are -100 for CrossEntropyLoss's ignore_index.
+Use `loss_mask` for play/noop and `play_loss_mask` for card/slot/coordinate heads.
+
+`attention_mask=True` means a real timestep. `padding_mask=True` and
+`causal_mask=True` mean blocked attention. After DataLoader collation, use
+`batch["causal_mask"][0]` as the shared [T,T] PyTorch attention mask and
+`batch["padding_mask"]` as the [B,T] key-padding mask. Real states are followed by
+padding, and causal attention prevents later states leaking into earlier queries.
+Rewards, terminal flags and return-to-go are returned separately from states;
+feed return-to-go only when explicitly training a return-conditioned policy.
+
+With at least two distinct battles, split before fitting the shared vocabulary:
+
+```python
+from offline_rl.dataset import create_train_val_datasets
+
+train_dataset, val_dataset = create_train_val_datasets(
+    "offline_rl/trajectories", validation_fraction=0.2, seed=42, sequence_length=32,
+)
+```
+
+Copies with the same source SHA256 stay on the same side of the split. Vocabulary
+IDs come from training model class names and training observations; validation
+uses those exact IDs and maps unseen classes to UNK, masking unencodable plays.
+For one battle, use `TrajectoryDataset` directly or `validation_fraction=0`,
+which returns `val_dataset=None`. Save `encoding_config()` with checkpoints;
+restore vocabularies via `Vocabulary.from_dict(...)` and normalization via
+`Normalization(**...)` for subsequent datasets and inference.
+
 ## How to train the bars detector
 
 Make sure `dataset` contains images, before running export_tensor_rt.py edit model_paths.py, then run from `v2`:

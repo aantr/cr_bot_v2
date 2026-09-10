@@ -6,7 +6,7 @@ import sys
 import time
 from collections import defaultdict, deque
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import cv2
@@ -47,7 +47,7 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots/IMG_1357.mp4"
+INPUT_VIDEO = SCRIPT_DIR / "screenshots/last_20_percent.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
@@ -235,6 +235,11 @@ KALMAN_MAX_MISSED_FRAMES = 60
 TRACK_HOLD_PROCESSED_FRAMES = 5
 TRACK_CONFIDENCE_DECAY = 0.85
 TRACK_MIN_PREDICTED_CONFIDENCE = 0.15
+# A new unit is classified for a few frames, then its class is cached by track_id.
+# For strict one-shot mode, set CONFIRM_SAMPLES=1 and LOCK_MIN_CONFIDENCE=0.
+UNIT_CLASSIFICATION_CONFIRM_SAMPLES = 3
+UNIT_CLASSIFICATION_MAX_SAMPLES = 5
+UNIT_CLASSIFICATION_LOCK_MIN_CONFIDENCE = 0.70
 CARD_COUNT = 4
 CARD_IMGSZ = 224
 EMPTY_CARD_CLASS = "empty"
@@ -265,6 +270,21 @@ if not 0 < TRACK_CONFIDENCE_DECAY <= 1:
     raise ValueError("TRACK_CONFIDENCE_DECAY must be in the range (0, 1]")
 if not 0 <= TRACK_MIN_PREDICTED_CONFIDENCE <= 1:
     raise ValueError("TRACK_MIN_PREDICTED_CONFIDENCE must be in the range [0, 1]")
+if (
+    not isinstance(UNIT_CLASSIFICATION_CONFIRM_SAMPLES, int)
+    or UNIT_CLASSIFICATION_CONFIRM_SAMPLES < 1
+):
+    raise ValueError("UNIT_CLASSIFICATION_CONFIRM_SAMPLES must be a positive integer")
+if (
+    not isinstance(UNIT_CLASSIFICATION_MAX_SAMPLES, int)
+    or UNIT_CLASSIFICATION_MAX_SAMPLES < UNIT_CLASSIFICATION_CONFIRM_SAMPLES
+):
+    raise ValueError(
+        "UNIT_CLASSIFICATION_MAX_SAMPLES must be >= "
+        "UNIT_CLASSIFICATION_CONFIRM_SAMPLES"
+    )
+if not 0 <= UNIT_CLASSIFICATION_LOCK_MIN_CONFIDENCE <= 1:
+    raise ValueError("UNIT_CLASSIFICATION_LOCK_MIN_CONFIDENCE must be in [0, 1]")
 if FIELD_ROWS != 32 or FIELD_COLUMNS != 18:
     raise ValueError(
         f"field.py must contain a 32x18 field, got {FIELD_ROWS}x{FIELD_COLUMNS}"
@@ -1084,6 +1104,50 @@ class BoundingBoxKalmanFilter:
 
 
 @dataclass
+class UnitClassificationCacheEntry:
+    weighted_scores: dict[str, float] = field(default_factory=dict)
+    confidence_sums: dict[str, float] = field(default_factory=dict)
+    class_counts: dict[str, int] = field(default_factory=dict)
+    sample_count: int = 0
+    class_name: str = "unknown"
+    confidence: float = 0.0
+    locked: bool = False
+
+    def add(self, class_name: str, confidence: float) -> None:
+        """Add one prediction and update the confidence-weighted winner."""
+        confidence = float(confidence)
+        self.sample_count += 1
+        self.weighted_scores[class_name] = (
+            self.weighted_scores.get(class_name, 0.0) + confidence
+        )
+        self.confidence_sums[class_name] = (
+            self.confidence_sums.get(class_name, 0.0) + confidence
+        )
+        self.class_counts[class_name] = self.class_counts.get(class_name, 0) + 1
+
+        self.class_name = max(
+            self.weighted_scores,
+            key=lambda name: (self.weighted_scores[name], self.class_counts[name]),
+        )
+        winner_count = self.class_counts[self.class_name]
+        self.confidence = self.confidence_sums[self.class_name] / winner_count
+        enough_consistent_samples = (
+            winner_count >= UNIT_CLASSIFICATION_CONFIRM_SAMPLES
+            and self.confidence >= UNIT_CLASSIFICATION_LOCK_MIN_CONFIDENCE
+        )
+        self.locked = (
+            enough_consistent_samples
+            or self.sample_count >= UNIT_CLASSIFICATION_MAX_SAMPLES
+        )
+
+    @property
+    def display_text(self) -> str:
+        if self.sample_count == 0:
+            return "None"
+        return f"{self.class_name} {self.confidence:.2f}"
+
+
+@dataclass
 class UnitTrackMemory:
     confidence: float
     mean_color_bgr: tuple[float, float, float] | None
@@ -1262,6 +1326,7 @@ def iter_processing_frames(capture, source_fps: float, target_fps: float):
 bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 bar_kalman_last_seen: dict[int, int] = {}
 unit_track_memories: dict[int, UnitTrackMemory] = {}
+unit_classification_cache: dict[int, UnitClassificationCacheEntry] = {}
 elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 elixir_kalman_last_seen: dict[int, int] = {}
 elixir_event_tracker = ElixirEventTracker(
@@ -1379,6 +1444,11 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
         frame_count,
         battlefield.shape,
     )
+    # A tracker can eventually reuse a numeric ID. Drop its classification only
+    # after the associated Kalman track has expired, not during a short gap.
+    for stale_track_id in list(unit_classification_cache):
+        if stale_track_id not in bar_kalman_filters:
+            unit_classification_cache.pop(stale_track_id, None)
 
     # Собираем данные о кадре
     frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
@@ -1482,19 +1552,34 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                 #     device,
                 #     verbose=False,
                 # )
-                if blue_rect is not None:
+                classification_state = unit_classification_cache.get(
+                    int(track_id)
+                )
+                if classification_state is None and blue_rect is not None:
+                    classification_state = UnitClassificationCacheEntry()
+                    unit_classification_cache[int(track_id)] = classification_state
+
+                if (
+                    blue_rect is not None
+                    and classification_state is not None
+                    and not classification_state.locked
+                ):
                     predictions = classify_crop(
                         classification_model,
                         blue_rect,
                         imgsz=224,
                         device="0",
-                        top_k=3,
+                        top_k=1,
                         quantize=16,
                     )
                     class_name, confidence = predictions[0]
-                    cls_text = f"{class_name} {confidence:.2f}"
-                else:
-                    cls_text = "None"
+                    classification_state.add(class_name, confidence)
+
+                cls_text = (
+                    classification_state.display_text
+                    if classification_state is not None
+                    else "None"
+                )
                 unit_track_memories[int(track_id)] = UnitTrackMemory(
                     confidence=float(conf),
                     mean_color_bgr=mean_color_bgr,

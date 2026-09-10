@@ -1,12 +1,22 @@
+import json
 import logging
 import math
+import os
 import sys
+import time
 from collections import defaultdict, deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
 import numpy as np
+
+_cublas_dir = Path(sys.prefix) / "Lib/site-packages/nvidia/cublas/bin"
+if sys.platform == "win32" and _cublas_dir.is_dir():
+    _cublas_dll_handle = os.add_dll_directory(str(_cublas_dir))
+    os.environ["PATH"] = str(_cublas_dir) + os.pathsep + os.environ.get("PATH", "")
+
 import torch
 from ultralytics import YOLO
 
@@ -17,6 +27,10 @@ from model_paths import (
     CLASSIFICATION_MODEL_PATH,
     DETECTION_ENGINE_PATH,
     ELIXIR_DETECTION_ENGINE_PATH,
+    TOWER_HP_1,
+    TOWER_HP_2,
+    TOWER_HP_ENEMY_1,
+    TOWER_HP_ENEMY_2,
 )
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -34,7 +48,7 @@ MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
 INPUT_VIDEO = SCRIPT_DIR / "screenshots/IMG_1357.mp4"
-OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_calman.mp4"
+OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
 CONF = 0.30
@@ -43,6 +57,37 @@ MAX_DET = 500
 DEVICE = 0
 QUANTIZE = 16  # FP16; use None for FP32
 FPS_PROCESS = 30  # Frames per video second to process; None uses source FPS.
+
+# Tower HP OCR (video-time rate, capped by FPS_PROCESS).
+TOWER_HP_ENABLED = True
+TOWER_HP_FPS = 10.0
+TOWER_HP_MIN_CONFIDENCE = 0.70  # PaddleOCR recognition score, 0..1.
+TOWER_HP_CONFIRM_READINGS = 2
+# Safety bounds, not actual tower starting HP. Set for your battle/levels.
+TOWER_HP_MAX_VALUES = {"ally_1": 10000, "ally_2": 10000,
+                       "enemy_1": 10000, "enemy_2": 10000}
+TOWER_HP_SCALE = 1.0  # Keep original BGR crops; PaddleOCR resizes internally.
+TOWER_HP_MODEL_NAME = "en_PP-OCRv3_mobile_rec"
+TOWER_HP_MODEL_DIR = None  # Optional local PaddleOCR inference model directory.
+TOWER_HP_DEVICE = "cpu"  # Paddle 3.0.0rc1/cu123 gives invalid output on RTX 5080.
+TOWER_HP_CPU_THREADS = 4
+TOWER_HP_ENABLE_MKLDNN = False  # Paddle 3.0.0rc1 fails on this model with MKL-DNN.
+TOWER_HP_STARTUP_TIMEOUT = 180.0  # Includes the first model download.
+TOWER_HP_REQUEST_TIMEOUT = 15.0  # Kill a stuck worker; never reuse a late result.
+TOWER_HP_LOG_PATH = OUTPUT_VIDEO.with_suffix(".tower_hp.jsonl")  # Appended per run.
+show_tower_hp = False
+
+if TOWER_HP_ENABLED:
+    if not math.isfinite(TOWER_HP_FPS) or TOWER_HP_FPS <= 0:
+        raise ValueError("TOWER_HP_FPS must be finite and positive")
+    if not 0 <= TOWER_HP_MIN_CONFIDENCE <= 1:
+        raise ValueError("TOWER_HP_MIN_CONFIDENCE must be between 0 and 1")
+    if not isinstance(TOWER_HP_CONFIRM_READINGS, int) or TOWER_HP_CONFIRM_READINGS < 2:
+        raise ValueError("TOWER_HP_CONFIRM_READINGS must be an integer >= 2")
+    if not math.isfinite(TOWER_HP_SCALE) or TOWER_HP_SCALE <= 0:
+        raise ValueError("TOWER_HP_SCALE must be finite and positive")
+    if not isinstance(TOWER_HP_CPU_THREADS, int) or TOWER_HP_CPU_THREADS < 1:
+        raise ValueError("TOWER_HP_CPU_THREADS must be a positive integer")
 
 # Field cell color: compare R * RED_WEIGHT with B * BLUE_WEIGHT.
 # Increase a channel's weight to select its color more often.
@@ -61,7 +106,7 @@ BATTLEFIELD_DEBUG_WINDOW = "Battlefield debug"
 BATTLEFIELD_DEBUG_WIDTH = 500
 
 # Debug window with the four card slots and classification results.
-show_cards = True
+show_cards = False
 CARDS_DEBUG_WINDOW = "Cards debug"
 
 
@@ -95,6 +140,26 @@ process_fps = fps if FPS_PROCESS is None else min(float(FPS_PROCESS), fps)
 print(f"Video FPS: {fps:g}; processing/output FPS: {process_fps:g}")
 
 video_size = (width, height)
+tower_hp_crops = {}
+if TOWER_HP_ENABLED:
+    for tower_id, regions in (
+        ("ally_1", TOWER_HP_1), ("ally_2", TOWER_HP_2),
+        ("enemy_1", TOWER_HP_ENEMY_1), ("enemy_2", TOWER_HP_ENEMY_2),
+    ):
+        if video_size not in regions:
+            raise ValueError(
+                f"Missing HP crop for {tower_id} at {video_size} in model_paths.py. "
+                "Add its coordinates or set TOWER_HP_ENABLED=False."
+            )
+        x1, y1, x2, y2 = regions[video_size]
+        if not (0 <= x1 < x2 <= width and 0 <= y1 < y2 <= height):
+            raise ValueError(f"Invalid HP crop for {tower_id}: {regions[video_size]}")
+        if (tower_id not in TOWER_HP_MAX_VALUES
+                or not isinstance(TOWER_HP_MAX_VALUES[tower_id], int)
+                or TOWER_HP_MAX_VALUES[tower_id] <= 0):
+            raise ValueError(f"Set a positive integer max HP for {tower_id}")
+        tower_hp_crops[tower_id] = (x1, y1, x2, y2)
+
 if video_size not in BATTLEFIELDS:
     raise ValueError(
         f"Unsupported video resolution: {width}x{height}. "
@@ -135,12 +200,6 @@ if not out.isOpened():
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Загрузка модели
-# classification_model, classification_classes = load_trained_model(
-#     CLASSIFICATION_MODEL_PATH, device
-# )
-# classification_cards, classification_classes_cards = load_trained_model(
-#     CLASSIFICATION_CARDS_PATH, device
-# )
 classification_model = YOLO(
     CLASSIFICATION_MODEL_PATH
 )
@@ -171,6 +230,11 @@ LEN_POSES = 5
 SIZE_OF_RECT = 128
 SIZE_RESCTRICTIONS = (10, 10), (50, 60)
 KALMAN_MAX_MISSED_FRAMES = 60
+# Keep a unit visible while its detector track is briefly absent. The value is
+# measured in processed frames, so it behaves the same for FPS_PROCESS=20/30/60.
+TRACK_HOLD_PROCESSED_FRAMES = 5
+TRACK_CONFIDENCE_DECAY = 0.85
+TRACK_MIN_PREDICTED_CONFIDENCE = 0.15
 CARD_COUNT = 4
 CARD_IMGSZ = 224
 EMPTY_CARD_CLASS = "empty"
@@ -192,12 +256,256 @@ FIELD_COLUMNS = len(FIELD[0]) if FIELD else 0
 FIELD_CELL_SIZE = 25
 FIELD_WINDOW_NAME = "Arena 32x18"
 
+if (
+    not isinstance(TRACK_HOLD_PROCESSED_FRAMES, int)
+    or TRACK_HOLD_PROCESSED_FRAMES < 1
+):
+    raise ValueError("TRACK_HOLD_PROCESSED_FRAMES must be a positive integer")
+if not 0 < TRACK_CONFIDENCE_DECAY <= 1:
+    raise ValueError("TRACK_CONFIDENCE_DECAY must be in the range (0, 1]")
+if not 0 <= TRACK_MIN_PREDICTED_CONFIDENCE <= 1:
+    raise ValueError("TRACK_MIN_PREDICTED_CONFIDENCE must be in the range [0, 1]")
 if FIELD_ROWS != 32 or FIELD_COLUMNS != 18:
     raise ValueError(
         f"field.py must contain a 32x18 field, got {FIELD_ROWS}x{FIELD_COLUMNS}"
     )
 if any(len(row) != FIELD_COLUMNS for row in FIELD):
     raise ValueError("All rows in field.py must have the same length")
+
+
+def create_tower_hp_recognizer():
+    """Keep Paddle/cuDNN in a persistent process isolated from PyTorch/YOLO."""
+    from tower_hp_process import TowerHPProcess
+    return TowerHPProcess(
+        model_name=TOWER_HP_MODEL_NAME, model_dir=TOWER_HP_MODEL_DIR,
+        device=TOWER_HP_DEVICE, cpu_threads=TOWER_HP_CPU_THREADS,
+        enable_mkldnn=TOWER_HP_ENABLE_MKLDNN,
+        startup_timeout=TOWER_HP_STARTUP_TIMEOUT, request_timeout=TOWER_HP_REQUEST_TIMEOUT,
+    )
+
+
+def prepare_tower_hp_crop(crop: np.ndarray) -> np.ndarray:
+    """Keep clean BGR pixels; thresholding/inversion loses game-font detail."""
+    if TOWER_HP_SCALE == 1:
+        return crop.copy()
+    return cv2.resize(crop, None, fx=TOWER_HP_SCALE, fy=TOWER_HP_SCALE,
+                      interpolation=cv2.INTER_CUBIC)
+
+
+def parse_tower_hp_data(data: dict, max_hp: int) -> dict:
+    """Validate PaddleOCR text without stripping arbitrary non-digit characters."""
+    
+    # Извлеките текст и уверенность из нового формата PaddleOCR 3.x
+    if isinstance(data, dict) and "rec_text" in data and "rec_score" in data:
+        raw_text = str(data["rec_text"]).strip()
+        confidence = float(data["rec_score"])
+    elif isinstance(data, dict):
+        # Новый формат: rec_texts и rec_scores - это списки
+        rec_texts = data.get('rec_texts', [])
+        rec_scores = data.get('rec_scores', [])
+        
+        if len(rec_texts) > 1 or len(rec_scores) > 1:
+            raise ValueError("Expected a single HP number, not multiple text regions")
+        if rec_texts and rec_scores:
+            # Берем первый элемент из списков
+            raw_text = str(rec_texts[0]).strip()
+            confidence = float(rec_scores[0])
+        else:
+            # Если списки пустые
+            raw_text = ""
+            confidence = 0.0
+    else:
+        raw_text = ""
+        confidence = 0.0
+    
+    if not math.isfinite(confidence) or not 0 <= confidence <= 1:
+        raise ValueError("Invalid PaddleOCR rec_score")
+    
+    reading = {"raw_text": raw_text, "confidence": confidence,
+               "value": None, "error": None}
+    
+    if not raw_text:
+        reading["error"] = "no_text"
+    elif not raw_text.isascii() or not raw_text.isdecimal():
+        reading["error"] = "not_single_number"
+    elif len(raw_text) > len(str(max_hp)) or int(raw_text) > max_hp:
+        reading["error"] = "out_of_range"
+    elif confidence < TOWER_HP_MIN_CONFIDENCE:
+        reading["error"] = "low_confidence"
+    else:
+        reading["value"] = int(raw_text)
+    
+    return reading
+
+
+@dataclass
+class TowerHPState:
+    hp: int | None = None
+    confidence: float = 0.0
+    observed_at_ms: float | None = None  # First reading of the confirmed change.
+    confirmed_at_ms: float | None = None
+    last_seen_at_ms: float | None = None
+    stale: bool = True
+    pending_hp: int | None = None
+    pending_count: int = 0
+    pending_since_ms: float | None = None
+    pending_confidence: float = 0.0
+
+    def update(self, reading: dict, timestamp_ms: float) -> bool:
+        """Only consecutive valid readings confirm a change; missing text != zero."""
+        value = reading["value"]
+        if value is None:
+            self.pending_hp = None
+            self.pending_count = 0
+            self.stale = True
+            return False
+        if value == self.hp:
+            self.confidence = reading["confidence"]
+            self.last_seen_at_ms = timestamp_ms
+            self.stale = False
+            self.pending_hp = None
+            self.pending_count = 0
+            return False
+        self.stale = True  # Old HP retained while a different value is unconfirmed.
+        if value != self.pending_hp:
+            self.pending_hp = value
+            self.pending_count = 1
+            self.pending_since_ms = timestamp_ms
+            self.pending_confidence = reading["confidence"]
+        else:
+            self.pending_count += 1
+            self.pending_confidence = min(self.pending_confidence, reading["confidence"])
+        if self.pending_count < TOWER_HP_CONFIRM_READINGS:
+            return False
+        self.hp = value
+        self.confidence = self.pending_confidence
+        self.observed_at_ms = self.pending_since_ms
+        self.confirmed_at_ms = timestamp_ms
+        self.last_seen_at_ms = timestamp_ms
+        self.stale = False
+        self.pending_hp = None
+        self.pending_count = 0
+        return True
+
+    def snapshot(self) -> dict:
+        return {"hp": self.hp, "confidence": self.confidence,
+                "observed_at_ms": self.observed_at_ms,
+                "confirmed_at_ms": self.confirmed_at_ms,
+                "last_seen_at_ms": self.last_seen_at_ms, "stale": self.stale}
+
+
+@dataclass
+class TowerHPSampler:
+    interval_ms: float
+    next_due_ms: float = 0.0
+
+    def due(self, timestamp_ms: float) -> bool:
+        if timestamp_ms + 1e-6 < self.next_due_ms:
+            return False
+        # Absolute video-time deadlines: no accumulated drift or catch-up bursts.
+        self.next_due_ms = (math.floor((timestamp_ms + 1e-6) / self.interval_ms) + 1) * self.interval_ms
+        return True
+
+
+def recognize_tower_hp_previews(previews: dict, recognizer) -> tuple[dict, dict]:
+    """Recognize copied crops; this function may run in a background thread."""
+    if not previews:
+        return {}, {}
+    started = time.perf_counter()
+    try:
+        results = list(recognizer.predict(input=list(previews.values()), batch_size=len(previews)))
+        if len(results) != len(previews):
+            raise ValueError(f"Expected {len(previews)} HP results, got {len(results)}")
+    except (RuntimeError, OSError, ValueError) as exc:
+        batch_ms = (time.perf_counter() - started) * 1000
+        return {tower_id: {"raw_text": "", "confidence": 0.0, "value": None,
+                           "error": f"ocr_error: {exc}", "batch_ms": round(batch_ms, 2),
+                           "ocr_ms": round(batch_ms / len(previews), 2)}
+                for tower_id in previews}, previews
+    batch_ms = (time.perf_counter() - started) * 1000
+    readings = {}
+    for tower_id, result in zip(previews, results):
+        try:
+            reading = parse_tower_hp_data(result, TOWER_HP_MAX_VALUES[tower_id])
+        except (KeyError, TypeError, ValueError) as exc:
+            reading = {"raw_text": "", "confidence": 0.0, "value": None,
+                       "error": f"ocr_error: {exc}"}
+        reading["batch_ms"] = round(batch_ms, 2)
+        reading["ocr_ms"] = round(batch_ms / len(previews), 2)  # Amortized, not per-crop timing.
+        readings[tower_id] = reading
+    return readings, previews
+
+
+def read_tower_hp(frame: np.ndarray, crops: dict, recognizer) -> tuple[dict, dict]:
+    previews = {tower_id: prepare_tower_hp_crop(frame[y1:y2, x1:x2])
+                for tower_id, (x1, y1, x2, y2) in crops.items()}
+    return recognize_tower_hp_previews(previews, recognizer)
+
+
+class TowerHPAsyncReader:
+    """Allow video inference to continue while a single OCR batch is running."""
+
+    def __init__(self, recognizer) -> None:
+        self.recognizer = recognizer
+        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tower-hp")
+        self.future: Future | None = None
+        self.timestamp_ms: float | None = None
+
+    def submit(self, frame: np.ndarray, crops: dict, timestamp_ms: float) -> bool:
+        if self.future is not None or not self.recognizer.is_running:
+            return False
+        # Copy only the small crops; the main loop can immediately reuse `frame`.
+        previews = {tower_id: prepare_tower_hp_crop(frame[y1:y2, x1:x2])
+                    for tower_id, (x1, y1, x2, y2) in crops.items()}
+        self.timestamp_ms = timestamp_ms
+        self.future = self.executor.submit(
+            recognize_tower_hp_previews, previews, self.recognizer
+        )
+        return True
+
+    def poll(self):
+        if self.future is None or not self.future.done():
+            return None
+        future, timestamp_ms = self.future, self.timestamp_ms
+        self.future = None
+        self.timestamp_ms = None
+        readings, previews = future.result()
+        return timestamp_ms, readings, previews
+
+    def close(self) -> None:
+        self.recognizer.close()
+        self.executor.shutdown(wait=True, cancel_futures=True)
+
+
+def draw_tower_hp(frame: np.ndarray, crops: dict, states: dict) -> None:
+    for tower_id, (x1, y1, x2, y2) in crops.items():
+        state = states[tower_id]
+        hp_text = "?" if state.hp is None else str(state.hp)
+        label = f"{tower_id}: {hp_text}" + (" stale" if state.stale else "")
+        color = (0, 180, 255) if state.stale else (0, 255, 0)
+        y = max(20, y1 - 10)
+        cv2.putText(frame, label, (x1, y), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.65, (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(frame, label, (x1, y), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.65, color, 1, cv2.LINE_AA)
+
+
+def show_tower_hp_debug(frame: np.ndarray, crops: dict, previews: dict,
+                        readings: dict) -> None:
+    canvas = np.zeros((len(crops) * 140, 600, 3), dtype=np.uint8)
+    for index, (tower_id, (x1, y1, x2, y2)) in enumerate(crops.items()):
+        y = index * 140
+        raw = cv2.resize(frame[y1:y2, x1:x2], (280, 90))
+        processed = cv2.resize(previews[tower_id], (280, 90))
+        canvas[y + 45:y + 135, 10:290] = raw
+        canvas[y + 45:y + 135, 310:590] = processed
+        reading = readings[tower_id]
+        label = f"{tower_id}: {reading['raw_text']!r} {reading['confidence']:.2f}"
+        cv2.putText(canvas, label, (10, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5, (255, 255, 255), 1)
+        cv2.putText(canvas, reading["error"] or "valid", (10, y + 37),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 200, 255), 1)
+    cv2.imshow("Tower HP debug: original / OCR input", canvas)
 
 
 def build_field_background() -> np.ndarray:
@@ -748,7 +1056,15 @@ class BoundingBoxKalmanFilter:
     ) -> np.ndarray:
         self.filter.predict()
         corrected = self.filter.correct(self._xyxy_to_measurement(box)).reshape(8)
-        cx, cy, width, height = map(float, corrected[:4])
+        return self._state_to_xyxy(corrected, image_width, image_height)
+
+    @staticmethod
+    def _state_to_xyxy(
+        state: np.ndarray,
+        image_width: int,
+        image_height: int,
+    ) -> np.ndarray:
+        cx, cy, width, height = map(float, state[:4])
         width = max(1.0, width)
         height = max(1.0, height)
         return np.array(
@@ -761,6 +1077,86 @@ class BoundingBoxKalmanFilter:
             dtype=np.float32,
         )
 
+    def predict(self, image_width: int, image_height: int) -> np.ndarray:
+        """Advance one missing frame and return the predicted box."""
+        predicted = self.filter.predict().reshape(8)
+        return self._state_to_xyxy(predicted, image_width, image_height)
+
+
+@dataclass
+class UnitTrackMemory:
+    confidence: float
+    mean_color_bgr: tuple[float, float, float] | None
+    classification_text: str
+
+
+@dataclass(frozen=True)
+class PredictedUnitTrack:
+    track_id: int
+    bbox: np.ndarray
+    confidence: float
+    missed_processed_frames: int
+    memory: UnitTrackMemory
+
+
+def predict_missing_unit_tracks(
+    filters: dict[int, BoundingBoxKalmanFilter],
+    last_seen: dict[int, int],
+    memories: dict[int, UnitTrackMemory],
+    detected_track_ids: set[int],
+    frame_index: int,
+    image_shape: tuple[int, ...],
+    source_fps: float,
+    sampling_fps: float,
+) -> list[PredictedUnitTrack]:
+    """Coast unit tracks through short detector gaps using Kalman predictions."""
+    image_height, image_width = image_shape[:2]
+    hold_source_frames = max(
+        1,
+        math.ceil(TRACK_HOLD_PROCESSED_FRAMES * source_fps / sampling_fps),
+    )
+    predictions: list[PredictedUnitTrack] = []
+
+    for track_id, memory in list(memories.items()):
+        if track_id in detected_track_ids:
+            continue
+        seen_frame = last_seen.get(track_id)
+        kalman_filter = filters.get(track_id)
+        if seen_frame is None or kalman_filter is None:
+            memories.pop(track_id, None)
+            continue
+
+        missed_source_frames = frame_index - seen_frame
+        if missed_source_frames <= 0:
+            continue
+        if missed_source_frames > hold_source_frames:
+            memories.pop(track_id, None)
+            continue
+
+        # frame_index is a source-video index, while this setting is intentionally
+        # expressed in processed frames. round() avoids 59.94 -> 30 rounding up.
+        missed_processed_frames = max(
+            1,
+            round(missed_source_frames * sampling_fps / source_fps),
+        )
+        confidence = memory.confidence * (
+            TRACK_CONFIDENCE_DECAY ** missed_processed_frames
+        )
+        if confidence < TRACK_MIN_PREDICTED_CONFIDENCE:
+            continue
+
+        predictions.append(
+            PredictedUnitTrack(
+                track_id=track_id,
+                bbox=kalman_filter.predict(image_width, image_height),
+                confidence=confidence,
+                missed_processed_frames=missed_processed_frames,
+                memory=memory,
+            )
+        )
+
+    return predictions
+
 
 def smooth_result_boxes(
     result,
@@ -768,8 +1164,9 @@ def smooth_result_boxes(
     last_seen: dict[int, int],
     frame_index: int,
     image_shape: tuple[int, ...],
-) -> None:
+) -> set[int]:
     """Replace tracked result boxes with their Kalman-smoothed coordinates."""
+    detected_track_ids: set[int] = set()
     if (
         result.boxes is not None
         and len(result.boxes) > 0
@@ -781,6 +1178,7 @@ def smooth_result_boxes(
         smoothed_boxes: list[np.ndarray] = []
         for box, track_id in zip(raw_boxes, track_ids):
             track_id = int(track_id)
+            detected_track_ids.add(track_id)
             if track_id not in filters:
                 filters[track_id] = BoundingBoxKalmanFilter(box)
             smoothed_boxes.append(
@@ -805,6 +1203,8 @@ def smooth_result_boxes(
     for track_id in stale_ids:
         filters.pop(track_id, None)
         last_seen.pop(track_id, None)
+
+    return detected_track_ids
 
 
 def extract_blue_rect(
@@ -861,6 +1261,7 @@ def iter_processing_frames(capture, source_fps: float, target_fps: float):
 
 bar_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 bar_kalman_last_seen: dict[int, int] = {}
+unit_track_memories: dict[int, UnitTrackMemory] = {}
 elixir_kalman_filters: dict[int, BoundingBoxKalmanFilter] = {}
 elixir_kalman_last_seen: dict[int, int] = {}
 elixir_event_tracker = ElixirEventTracker(
@@ -873,6 +1274,20 @@ card_histories: list[deque[CardObservation]] = [
     deque(maxlen=card_history_length) for _ in range(CARD_COUNT)
 ]
 event_logger = create_event_logger(EVENT_LOG_PATH)
+tower_hp_recognizer = create_tower_hp_recognizer() if TOWER_HP_ENABLED else None
+tower_hp_async_reader = (
+    TowerHPAsyncReader(tower_hp_recognizer) if tower_hp_recognizer is not None else None
+)
+tower_hp_states = {tower_id: TowerHPState() for tower_id in tower_hp_crops}
+tower_hp = {tower_id: state.snapshot() for tower_id, state in tower_hp_states.items()}
+tower_hp_sampler = TowerHPSampler(1000 / min(TOWER_HP_FPS, process_fps)) if TOWER_HP_ENABLED else None
+if TOWER_HP_ENABLED:
+    TOWER_HP_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
+        hp_log.write(json.dumps({"type": "run", "video": str(INPUT_VIDEO),
+                                 "source_fps": fps, "ocr_fps": min(TOWER_HP_FPS, process_fps),
+                                 "crops": tower_hp_crops, "ocr_backend": "paddleocr",
+                                 "model": TOWER_HP_MODEL_NAME, "device": TOWER_HP_DEVICE}) + "\n")
 card_event_markers: list[tuple[int, int, str, int]] = []
 card_event_marker_frames = max(1, math.ceil(fps * CARD_EVENT_MARKER_MS / 1000))
 field_background = build_field_background()
@@ -885,6 +1300,36 @@ cv2.resizeWindow(
 
 for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
     # frame_count remains a source-video index: all ms thresholds use source fps.
+    timestamp_ms = frame_count * 1000 / fps
+    completed_hp = tower_hp_async_reader.poll() if tower_hp_async_reader is not None else None
+    if completed_hp is not None:
+        hp_timestamp_ms, hp_readings, hp_previews = completed_hp
+        hp_frame_index = round(hp_timestamp_ms * fps / 1000)
+        for tower_id, reading in hp_readings.items():
+            state = tower_hp_states[tower_id]
+            if state.update(reading, hp_timestamp_ms):
+                event_logger.info(
+                    "Tower HP: %s=%d; confidence=%.2f; observed_at_ms=%.1f; confirmed_at_ms=%.1f",
+                    tower_id, state.hp, state.confidence, state.observed_at_ms, hp_timestamp_ms,
+                )
+            tower_hp[tower_id] = state.snapshot()
+        batch_errors = sorted({reading["error"] for reading in hp_readings.values()
+                               if reading["error"] and reading["error"].startswith("ocr_error:")})
+        for error in batch_errors:
+            event_logger.warning("Tower HP batch: %s", error)
+        with TOWER_HP_LOG_PATH.open("a", encoding="utf-8") as hp_log:
+            hp_log.write(json.dumps({"type": "observation", "frame_index": hp_frame_index,
+                                     "timestamp_ms": hp_timestamp_ms, "readings": hp_readings,
+                                     "tower_hp": tower_hp}, ensure_ascii=False) + "\n")
+        if show_tower_hp:
+            show_tower_hp_debug(frame, tower_hp_crops, hp_previews, hp_readings)
+        if not tower_hp_recognizer.is_running:
+            event_logger.error("Tower HP OCR worker stopped; OCR is disabled for this run")
+            tower_hp_sampler = None
+
+    if tower_hp_sampler is not None and tower_hp_sampler.due(timestamp_ms):
+        # If OCR is still busy, skip this sample instead of delaying video inference.
+        tower_hp_async_reader.submit(frame, tower_hp_crops, timestamp_ms)
 
     # frame_cards = get_image_cards_format(frame)
     battlefield = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
@@ -920,7 +1365,7 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
         verbose=False,
     )[0]
 
-    smooth_result_boxes(
+    detected_bar_track_ids = smooth_result_boxes(
         results[0],
         bar_kalman_filters,
         bar_kalman_last_seen,
@@ -937,11 +1382,13 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
 
     # Собираем данные о кадре
     frame_data = {"frame_number": frame_count, "num_objects": 0, "objects": []}
+    frame_data["tower_hp"] = {tower_id: dict(state) for tower_id, state in tower_hp.items()}
     # Current-frame track_id -> mean (B, G, R), or None for an empty crop.
     bar_mean_colors: dict[int, tuple[float, float, float] | None] = {}
     field_objects: list[tuple[str, int | None, float, float]] = []
     elixir_centers: list[tuple[float, float]] = []
     bar_detection_count = 0
+    predicted_unit_count = 0
     elixir_detection_count = (
         0 if elixir_result.boxes is None else len(elixir_result.boxes)
     )
@@ -979,11 +1426,12 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
             bar_mean_colors[track_id] = mean_color_bgr
 
             # Ищем совпадающие бары и левелы
-            if (
+            is_unit_detection = (
                 class_id == 1
                 and SIZE_RESCTRICTIONS[0][0] <= x2 - x1 <= SIZE_RESCTRICTIONS[1][0]
                 and SIZE_RESCTRICTIONS[0][1] <= y2 - y1 <= SIZE_RESCTRICTIONS[1][1]
-            ):
+            )
+            if is_unit_detection:
 
                 bars_place[track_id].append((x1, y1, x2, y2))
                 while len(bars_place[track_id]) > LEN_POSES:
@@ -1047,6 +1495,11 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                     cls_text = f"{class_name} {confidence:.2f}"
                 else:
                     cls_text = "None"
+                unit_track_memories[int(track_id)] = UnitTrackMemory(
+                    confidence=float(conf),
+                    mean_color_bgr=mean_color_bgr,
+                    classification_text=cls_text,
+                )
             else:
                 cls_text = "None"
             if class_id == 0:
@@ -1076,6 +1529,7 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                 "track_id": track_id,
                 "class": model.names[class_id],
                 "confidence": conf,
+                "predicted": False,
                 "mean_color_bgr": mean_color_bgr,
                 "bbox": [x1, y1, x2, y2],
                 "center": [center_x, center_y],
@@ -1103,6 +1557,87 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
                 (0, 255, 0),
                 3,
             )
+
+    predicted_unit_tracks = predict_missing_unit_tracks(
+        bar_kalman_filters,
+        bar_kalman_last_seen,
+        unit_track_memories,
+        detected_bar_track_ids,
+        frame_count,
+        battlefield.shape,
+        fps,
+        process_fps,
+    )
+    predicted_unit_count = len(predicted_unit_tracks)
+    for predicted_track in predicted_unit_tracks:
+        track_id = predicted_track.track_id
+        x1, y1, x2, y2 = map(float, predicted_track.bbox)
+        bar_width = float(bar_for_level[track_id])
+        extended_right = min(float(battlefield.shape[1]), x2 + bar_width)
+        unit_center_x = (x1 + extended_right) / 2
+        unit_center_y = y2 + SIZE_OF_RECT / 2
+
+        bar_mean_colors[track_id] = predicted_track.memory.mean_color_bgr
+        field_objects.append(
+            ("blue_rect", track_id, unit_center_x, unit_center_y)
+        )
+        cv2.rectangle(
+            battlefield,
+            (round(x1), round(y1)),
+            (round(extended_right), round(y2)),
+            (0, 165, 255),
+            2,
+        )
+        predicted_left = round(unit_center_x - SIZE_OF_RECT / 2)
+        cv2.rectangle(
+            battlefield,
+            (predicted_left, round(y2)),
+            (
+                predicted_left + SIZE_OF_RECT,
+                round(y2) + SIZE_OF_RECT,
+            ),
+            (0, 165, 255),
+            2,
+        )
+        cv2.putText(
+            battlefield,
+            (
+                f"{track_id} {predicted_track.memory.classification_text} "
+                f"predicted {predicted_track.confidence:.2f}"
+            ),
+            (round(x1), max(20, round(y1) - 10)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 165, 255),
+            2,
+        )
+
+        predicted_center_x = (x1 + x2) / 2
+        predicted_center_y = (y1 + y2) / 2
+        frame_data["objects"].append(
+            {
+                "track_id": track_id,
+                "class": model.names[1],
+                "confidence": predicted_track.confidence,
+                "predicted": True,
+                "missed_processed_frames": (
+                    predicted_track.missed_processed_frames
+                ),
+                "mean_color_bgr": predicted_track.memory.mean_color_bgr,
+                "bbox": [x1, y1, x2, y2],
+                "center": [predicted_center_x, predicted_center_y],
+            }
+        )
+        object_history[track_id].append(
+            {
+                "frame": frame_count,
+                "center": (predicted_center_x, predicted_center_y),
+                "bbox": (x1, y1, x2, y2),
+                "predicted": True,
+            }
+        )
+
+    frame_data["num_objects"] += predicted_unit_count
 
     # Elixir detections never pass through classify_crop().
     if elixir_result.boxes is not None:
@@ -1133,6 +1668,7 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
     # Put the tracked and annotated battlefield back into the original frame.
     output_frame = frame.copy()
     output_frame[crop_y1:crop_y2, crop_x1:crop_x2] = battlefield
+    draw_tower_hp(output_frame, tower_hp_crops, tower_hp_states)
 
     card_images, card_slots = split_cards_from_frame(
         frame,
@@ -1200,7 +1736,10 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
     )
     cv2.putText(
         output_frame,
-        f"Bars: {bar_detection_count} | Elixir: {elixir_detection_count}",
+        (
+            f"Bars: {bar_detection_count} | Predicted: {predicted_unit_count} "
+            f"| Elixir: {elixir_detection_count}"
+        ),
         (10, 65),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.8,
@@ -1262,3 +1801,5 @@ for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
 cap.release()
 cv2.destroyAllWindows()
 out.release()
+if tower_hp_async_reader is not None:
+    tower_hp_async_reader.close()

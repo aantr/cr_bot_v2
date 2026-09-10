@@ -293,3 +293,1450 @@
 2026-09-09 17:28:25,684 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
 2026-09-09 17:28:27,531 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
 2026-09-09 17:28:34,580 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 18:23:57,414 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 18:24:02,804 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 18:24:07,245 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 18:24:15,361 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 18:24:23,600 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 18:24:30,077 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 18:24:34,586 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 18:57:42,202 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 18:57:42,202 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 18:57:42,202 | Tower HP: enemy_1=2667; confidence=0.97; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 18:57:42,203 | Tower HP: enemy_2=2211; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 18:57:43,354 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 18:57:47,962 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 18:57:51,670 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 18:57:58,043 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 18:58:04,033 | Tower HP: enemy_2=2039; confidence=1.00; observed_at_ms=4615.5; confirmed_at_ms=4716.2
+2026-09-09 18:58:04,696 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 18:58:10,293 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 18:58:12,571 | Tower HP: ally_1=221; confidence=0.98; observed_at_ms=6310.6; confirmed_at_ms=6411.3
+2026-09-09 18:58:14,092 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 18:58:17,099 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7200.1; confirmed_at_ms=7300.8
+2026-09-09 18:58:28,041 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 18:58:44,947 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13208.7
+2026-09-09 19:01:14,042 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 19:01:14,043 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 19:01:14,043 | Tower HP: enemy_1=2667; confidence=0.97; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 19:01:14,043 | Tower HP: enemy_2=2211; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 19:01:15,171 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:22:50,057 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:50,058 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,016 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,016 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,299 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,300 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,571 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,572 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,717 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:22:52,836 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:52,836 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,139 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,139 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,424 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,424 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,726 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:53,726 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,014 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,014 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,320 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,321 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,582 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,583 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,869 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:54,870 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,119 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,120 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,383 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,384 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,452 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:22:55,670 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,671 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,961 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:55,962 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,229 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,229 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,481 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,481 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,743 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:56,744 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,052 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,052 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,345 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,346 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,642 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,642 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,710 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:22:57,909 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:57,909 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,166 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,166 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,407 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,408 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,654 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,655 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,943 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:58,943 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,205 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,205 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,458 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,458 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,695 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,695 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,963 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:22:59,964 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,217 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,218 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,507 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,507 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,787 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:00,787 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,064 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,064 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,119 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:23:01,327 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,327 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,593 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,593 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,840 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:01,841 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,093 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,093 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,354 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,355 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,594 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,594 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,853 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:02,854 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,114 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,114 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,379 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,379 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,635 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,635 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,952 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:03,952 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,291 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,291 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,591 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,591 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,889 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:04,889 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,031 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 20:23:05,159 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,160 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,480 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,480 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,822 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:05,822 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,167 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,168 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,542 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,543 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,825 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:06,825 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,121 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,121 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,414 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,415 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,769 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:07,769 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,050 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,050 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,303 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,304 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,450 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 20:23:08,554 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,554 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,869 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:08,869 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,188 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,188 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,483 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,484 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,782 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:09,782 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,106 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,106 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,373 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,374 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,681 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,682 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,762 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 20:23:10,990 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:10,990 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,281 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,282 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,549 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,550 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,850 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:11,851 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,156 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,156 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,462 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,463 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,772 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:12,773 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,072 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,072 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,332 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,333 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,634 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,635 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,916 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:13,917 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,229 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,230 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,541 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,541 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,807 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:14,808 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,045 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,046 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,327 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,327 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,604 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,605 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,895 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:15,895 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,183 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,183 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,512 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,512 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,784 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:16,784 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,107 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,107 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,416 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,416 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,708 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,709 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,977 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:17,978 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,264 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,264 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,534 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,534 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,828 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,828 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:18,904 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 20:23:19,137 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,138 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,398 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,399 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,693 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,693 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,965 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:19,965 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,228 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,228 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,479 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,480 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,728 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:20,728 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,004 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,004 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,232 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,233 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,487 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,487 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,740 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,741 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,994 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:21,994 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,220 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,221 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,481 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,482 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,703 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,703 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,918 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:22,918 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,171 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,171 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,441 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,442 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,716 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,716 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,989 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:23,990 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,249 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,250 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,501 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,502 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,745 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,745 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,978 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:24,978 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,211 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,211 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,427 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,427 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,651 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,651 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,871 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:25,872 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,099 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,100 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,332 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,332 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,543 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,543 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,768 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,768 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,973 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:26,974 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,188 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,188 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,389 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,390 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,614 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,614 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,834 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:27,834 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,087 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,087 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,335 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,336 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,587 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,587 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,816 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:28,816 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,006 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,006 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,215 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,215 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,401 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,402 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,608 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,608 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,804 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,804 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,992 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:29,992 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,176 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,176 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,363 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,364 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,562 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,562 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,764 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,764 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,961 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:30,961 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:31,152 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:23:31,152 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:06,977 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:06,978 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:08,416 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:08,416 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:08,716 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:08,716 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,000 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,000 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,149 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:24:09,274 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,274 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,527 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,528 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,804 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:09,804 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,054 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,055 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,365 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,365 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,657 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,657 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,930 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:10,931 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:24,353 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:24,353 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:25,766 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:25,766 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,082 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,083 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,371 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,372 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,520 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:24:26,658 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,658 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,922 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:26,923 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,223 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,223 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,499 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,500 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,789 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:27,789 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,052 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,052 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,338 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,338 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,630 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,630 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,886 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:28,886 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,146 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,146 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,215 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:24:29,428 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,428 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,694 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,695 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,960 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:29,961 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,231 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,231 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,481 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,481 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,803 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:30,803 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,076 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,076 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,352 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,352 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,417 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:24:31,635 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,636 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,936 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:31,936 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,183 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,183 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,436 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,437 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,681 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,681 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,940 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:32,940 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,184 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,185 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,418 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,418 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,685 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,685 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,972 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:33,973 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,263 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,263 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,531 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,531 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,761 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,761 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:34,814 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:24:35,035 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,035 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,287 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,287 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,527 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,527 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,833 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:35,833 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,071 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,071 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,306 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,307 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,573 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,573 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,818 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:36,818 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,091 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,091 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,363 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,363 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,617 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,617 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,930 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:37,930 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,226 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,227 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,519 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,519 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,690 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 20:24:38,851 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:38,852 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,193 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,194 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,533 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,533 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,874 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:39,874 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,184 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,184 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,491 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,492 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,767 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:40,767 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,057 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,057 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,379 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,379 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,642 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,642 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,886 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:41,887 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,029 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 20:24:42,150 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,150 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,440 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,441 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,733 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:42,734 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,026 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,026 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,314 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,314 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,598 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,598 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,874 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:43,874 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,157 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,157 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,216 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 20:24:44,430 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,431 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,774 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:44,775 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,079 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,079 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,386 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,386 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,713 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:45,714 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,042 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,043 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,327 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,327 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,599 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,599 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,855 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:46,855 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,186 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,186 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,491 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,491 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,763 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:47,764 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,027 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,027 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,299 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,300 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,557 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,557 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,796 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:48,796 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,043 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,043 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,332 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,333 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,642 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,642 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,934 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:49,934 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,253 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,253 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,539 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,539 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,788 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:50,788 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,066 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,067 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,359 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,360 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,653 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,653 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,911 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:51,911 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,235 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,235 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,312 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 20:24:52,553 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,553 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,870 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:52,870 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:53,139 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:53,139 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:53,417 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:24:53,417 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:51,695 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:51,695 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,049 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,049 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,382 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,383 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,693 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,693 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,841 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:29:53,976 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:53,977 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,253 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,254 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,545 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,545 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,861 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:54,862 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,157 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,157 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,481 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,481 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,757 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:55,757 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,051 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,052 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,300 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,300 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,560 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,560 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,622 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:29:56,826 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:56,826 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,087 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,087 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,348 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,349 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,620 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,621 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,885 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:57,885 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,179 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,179 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,440 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,440 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,717 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,717 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,779 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:29:58,980 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:58,980 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,268 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,268 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,513 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,513 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,758 | Tower HP ally_2: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:29:59,759 | Tower HP enemy_1: ocr_error: Invalid PaddleOCR rec_score
+2026-09-09 20:47:54,942 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:47:57,624 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:47:59,839 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:48:03,194 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:48:07,089 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 20:48:10,583 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 20:48:12,961 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 20:48:21,334 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 20:50:53,230 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:50:55,939 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:50:58,142 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:51:01,499 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:54:10,400 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:54:13,158 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:54:15,479 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:54:18,824 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:54:22,771 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 20:54:26,232 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 20:54:28,532 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 20:54:36,694 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 20:56:04,090 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:59:30,573 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 20:59:33,203 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 20:59:35,388 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 20:59:38,733 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 20:59:42,571 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 20:59:46,035 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 20:59:48,388 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 22:11:34,859 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:11:34,859 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:11:34,859 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:11:34,859 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:11:36,155 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 22:11:41,489 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 22:11:45,741 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 22:11:53,816 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 22:12:02,319 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 22:12:02,739 | Tower HP: enemy_2=2039; confidence=0.99; observed_at_ms=4800.1; confirmed_at_ms=4900.8
+2026-09-09 22:12:08,708 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 22:12:11,438 | Tower HP: ally_1=2211; confidence=0.84; observed_at_ms=6310.6; confirmed_at_ms=6411.3
+2026-09-09 22:12:13,191 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 22:12:16,617 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7200.1; confirmed_at_ms=7300.8
+2026-09-09 22:12:29,380 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 22:12:48,882 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13208.7
+2026-09-09 22:14:34,836 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:14:34,836 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:14:34,836 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:14:34,836 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:14:36,131 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 22:14:41,394 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 22:14:45,675 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 22:14:52,770 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 22:17:10,777 | Tower HP ally_1: ocr_error: PaddleOCR worker timed out after 15s
+2026-09-09 22:17:10,778 | Tower HP ally_2: ocr_error: PaddleOCR worker timed out after 15s
+2026-09-09 22:17:10,778 | Tower HP enemy_1: ocr_error: PaddleOCR worker timed out after 15s
+2026-09-09 22:17:10,778 | Tower HP enemy_2: ocr_error: PaddleOCR worker timed out after 15s
+2026-09-09 22:17:12,362 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,362 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,362 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,362 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,609 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,609 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,609 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,609 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,842 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,842 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,842 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,843 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:12,966 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 22:17:13,070 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,070 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,070 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,070 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,299 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,299 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,299 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,299 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,535 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,536 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,536 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,536 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,761 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,761 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,761 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,761 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,995 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,995 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,995 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:13,995 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,226 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,226 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,227 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,227 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,455 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,455 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,455 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,455 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,686 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,686 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,686 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,686 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,897 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,897 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,897 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:14,897 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,114 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,115 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,115 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,115 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,166 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 22:17:15,333 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,333 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,333 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,333 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,559 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,559 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,559 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,559 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,778 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,778 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,778 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:15,778 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,000 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,000 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,000 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,000 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,221 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,221 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,222 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,222 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,456 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,456 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,457 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,457 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,689 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,689 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,689 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,689 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,928 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,929 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,929 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,929 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:16,981 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 22:17:17,148 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,148 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,148 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,148 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,371 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,371 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,371 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,371 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,601 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,601 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,601 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,601 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,843 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,843 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,843 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:17,844 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,085 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,085 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,085 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,085 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,316 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,316 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,316 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,316 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,554 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,554 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,554 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,555 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,783 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,783 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,783 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:18,784 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,021 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,021 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,021 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,021 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,261 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,261 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,261 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,261 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,514 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,514 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,514 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,514 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,764 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,764 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,764 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,764 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,999 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,999 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,999 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:19,999 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,054 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 22:17:20,234 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,235 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,235 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,235 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,469 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,470 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,470 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,470 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,711 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,711 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,711 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,711 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,961 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,961 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,961 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:20,961 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,187 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,187 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,188 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,188 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,419 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,419 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,419 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,420 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,658 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,659 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,659 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,659 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,904 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,904 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,904 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:21,904 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,151 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,151 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,152 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,152 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,406 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,407 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,407 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,407 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,661 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,661 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,661 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,661 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,920 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,920 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,920 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:22,920 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,169 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,169 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,169 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,169 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,421 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,421 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,421 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,421 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,580 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 22:17:23,699 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,699 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,699 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,699 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,965 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,965 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,965 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:23,965 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,240 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,240 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,240 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,240 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,516 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,516 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,516 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,516 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,794 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,794 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,795 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:24,795 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,073 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,073 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,073 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,073 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,303 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,304 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,304 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,304 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,548 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,548 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,548 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,548 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,818 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,819 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,819 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:25,819 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,057 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,057 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,057 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,058 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,273 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,273 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,273 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,273 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,402 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 22:17:26,498 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,499 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,499 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,499 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,746 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,746 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,746 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,746 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,997 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,997 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,997 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:26,997 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,258 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,259 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,259 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,259 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,494 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,495 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,495 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,495 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,750 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,750 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,750 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,750 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,983 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,983 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,983 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:27,983 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,224 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,224 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,224 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,224 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,288 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 22:17:28,479 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,479 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,479 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,479 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,752 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,752 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,752 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:28,752 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,018 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,018 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,019 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,019 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,285 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,285 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,286 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,286 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,568 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,568 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,568 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,568 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,848 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,848 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,849 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:29,849 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,104 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,104 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,104 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,104 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,379 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,379 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,379 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,379 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,634 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,634 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,634 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,634 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,896 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,897 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,897 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:30,897 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,164 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,164 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,165 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,165 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,440 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,440 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,440 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,440 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,710 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,710 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,710 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,710 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,940 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,940 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,940 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:31,941 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,177 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,178 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,178 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,178 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,409 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,409 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,409 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,409 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,662 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,662 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,662 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,662 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,933 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,933 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,933 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:32,933 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,185 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,185 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,186 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,186 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,456 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,456 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,456 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,456 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,711 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,711 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,711 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,711 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,957 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,957 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,957 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:33,957 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,298 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,298 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,298 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,298 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,541 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,542 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,542 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,542 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,779 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,779 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,780 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:34,780 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,016 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,017 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,017 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,017 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,262 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,262 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,262 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,262 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,519 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,519 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,519 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,519 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,574 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 22:17:35,755 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,756 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,756 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:35,756 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,000 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,001 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,001 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,001 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,252 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,252 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,252 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,252 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,474 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,474 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,474 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,475 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,702 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,702 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,702 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,702 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,921 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,921 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,921 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:36,921 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,145 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,146 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,146 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,146 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,358 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,358 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,358 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,358 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,560 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,560 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,560 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,560 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,777 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,777 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,777 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,777 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,997 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,997 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,997 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:37,997 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,220 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,221 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,221 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,221 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,435 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,436 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,436 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,436 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,646 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,646 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,646 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,646 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,834 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,834 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,834 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:38,834 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,038 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,038 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,038 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,038 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,253 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,253 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,253 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,254 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,471 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,471 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,471 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,471 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,688 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,688 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,688 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,688 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,906 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,906 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,906 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:39,906 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,121 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,122 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,122 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,122 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,352 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,352 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,352 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,352 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,575 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,575 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,575 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,575 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,790 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,791 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,791 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:40,791 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,006 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,006 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,007 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,007 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,215 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,215 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,215 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,215 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,427 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,428 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,428 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,428 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,684 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,684 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,684 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,684 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,893 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,893 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,893 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:41,893 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,111 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,112 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,112 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,112 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,315 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,319 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,319 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,319 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,532 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,532 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,532 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,532 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,745 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,745 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,746 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,746 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,946 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,947 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,947 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:42,947 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,141 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,141 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,141 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,141 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,346 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,346 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,346 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,346 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,565 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,565 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,565 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,565 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,794 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,794 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,794 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:43,794 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,008 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,008 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,008 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,008 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,225 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,225 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,225 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,225 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,442 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,442 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,442 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,442 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,634 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,634 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,634 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,635 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,822 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,822 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,822 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:44,823 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,013 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,013 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,013 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,013 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,198 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,198 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,198 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,198 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,398 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,398 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,398 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,398 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,575 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,575 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,575 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,576 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,753 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,754 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,754 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,754 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,919 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,919 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,919 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:45,919 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,098 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,098 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,098 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,098 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,275 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,275 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,275 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,276 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,451 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,451 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,452 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,452 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,636 | Tower HP ally_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,636 | Tower HP ally_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,636 | Tower HP enemy_1: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:17:46,636 | Tower HP enemy_2: ocr_error: PaddleOCR worker is not running
+2026-09-09 22:36:34,390 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:36:34,390 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:36:34,390 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:36:34,391 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-09 22:36:34,604 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-09 22:36:36,896 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-09 22:36:38,778 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-09 22:36:42,081 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-09 22:36:45,829 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-09 22:36:46,902 | Tower HP: enemy_2=2039; confidence=0.99; observed_at_ms=4900.8; confirmed_at_ms=5102.2
+2026-09-09 22:36:48,818 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-09 22:36:50,089 | Tower HP: ally_1=2211; confidence=0.84; observed_at_ms=6109.2; confirmed_at_ms=6310.6
+2026-09-09 22:36:50,852 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-09 22:36:53,425 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7300.8; confirmed_at_ms=7502.3
+2026-09-09 22:36:58,638 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-09 22:37:07,714 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13208.7; confirmed_at_ms=13410.1
+2026-09-09 22:40:17,024 | Tower HP: ally_1=5162; confidence=0.98; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-09 22:40:17,025 | Tower HP: ally_2=5213; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-09 22:40:17,025 | Tower HP: enemy_1=5936; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-09 22:40:17,025 | Tower HP: enemy_2=5344; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-09 22:40:20,238 | Сыграна карта: musketeer-ev1; слот=3; уверенность=0.48; клетка=(столбец=18, строка=24); средняя позиция=(1096.2, 1188.5); время_боя=1102 мс; длительность=301 мс; детекций=10
+2026-09-09 22:40:21,361 | Tower HP: ally_2=5192; confidence=0.99; observed_at_ms=1503.0; confirmed_at_ms=1703.5
+2026-09-09 22:40:24,441 | Tower HP: ally_2=5171; confidence=0.99; observed_at_ms=2505.1; confirmed_at_ms=2705.5
+2026-09-09 22:40:25,122 | Сыграна карта: skeletons; слот=1; уверенность=0.18; клетка=(столбец=3, строка=18); средняя позиция=(139.2, 889.0); время_боя=2739 мс; длительность=301 мс; детекций=10
+2026-09-09 22:40:27,454 | Сыграна карта: skeletons; слот=1; уверенность=0.18; клетка=(столбец=3, строка=16); средняя позиция=(138.6, 783.6); время_боя=3507 мс; длительность=334 мс; детекций=4
+2026-09-09 22:40:27,585 | Tower HP: ally_2=5150; confidence=0.98; observed_at_ms=3607.3; confirmed_at_ms=3807.7
+2026-09-09 22:40:35,502 | Сыграна карта: ice-golem; слот=2; уверенность=0.26; клетка=(столбец=6, строка=10); средняя позиция=(333.3, 469.1); время_боя=6179 мс; длительность=301 мс; детекций=10
+2026-09-09 22:40:38,759 | Сыграна карта: musketeer-ev1; слот=1; уверенность=0.30; клетка=(столбец=16, строка=18); средняя позиция=(970.9, 874.2); время_боя=7148 мс; длительность=367 мс; детекций=8
+2026-09-09 22:40:39,640 | Tower HP: ally_2=4925; confidence=1.00; observed_at_ms=7615.4; confirmed_at_ms=7715.6
+2026-09-09 22:40:43,356 | Tower HP: enemy_1=5915; confidence=1.00; observed_at_ms=8701.0; confirmed_at_ms=8901.4
+2026-09-09 22:40:46,013 | Сыграна карта: musketeer-ev1; слот=2; уверенность=0.33; клетка=(столбец=10, строка=21); средняя позиция=(585.3, 1042.7); время_боя=9369 мс; длительность=301 мс; детекций=10
+2026-09-09 22:40:46,802 | Tower HP: enemy_1=5894; confidence=1.00; observed_at_ms=9703.0; confirmed_at_ms=9803.2
+2026-09-09 22:40:50,822 | Tower HP: enemy_1=5799; confidence=1.00; observed_at_ms=10705.0; confirmed_at_ms=10805.2
+2026-09-09 22:40:55,080 | Tower HP: enemy_1=5778; confidence=1.00; observed_at_ms=11807.3; confirmed_at_ms=11907.5
+2026-09-09 22:40:55,342 | Сыграна карта: musketeer-ev1; слот=2; уверенность=0.57; клетка=(столбец=9, строка=24); средняя позиция=(522.8, 1192.3); время_боя=11740 мс; длительность=301 мс; детекций=8
+2026-09-09 22:40:58,887 | Tower HP: enemy_1=5757; confidence=1.00; observed_at_ms=12709.1; confirmed_at_ms=12809.3
+2026-09-09 22:41:03,153 | Tower HP: enemy_1=5736; confidence=1.00; observed_at_ms=13711.1; confirmed_at_ms=13811.3
+2026-09-09 22:41:07,511 | Tower HP: enemy_1=5715; confidence=0.99; observed_at_ms=14913.6; confirmed_at_ms=15013.8
+2026-09-09 22:41:09,518 | Сыграна карта: ice-golem; слот=4; уверенность=0.34; клетка=(столбец=5, строка=11); средняя позиция=(268.9, 526.4); время_боя=15381 мс; длительность=334 мс; детекций=10
+2026-09-09 22:41:10,448 | Tower HP: enemy_1=5694; confidence=1.00; observed_at_ms=15715.2; confirmed_at_ms=15915.6
+2026-09-09 22:41:17,864 | Tower HP: enemy_1=5673; confidence=1.00; observed_at_ms=18003.2; confirmed_at_ms=18203.6
+2026-09-09 22:41:18,398 | Сыграна карта: musketeer; слот=1; уверенность=0.20; клетка=(столбец=4, строка=18); средняя позиция=(204.3, 882.3); время_боя=18170 мс; длительность=301 мс; детекций=10
+2026-09-09 22:41:20,966 | Сыграна карта: musketeer; слот=1; уверенность=0.20; клетка=(столбец=4, строка=16); средняя позиция=(203.9, 778.7); время_боя=18972 мс; длительность=301 мс; детекций=7
+2026-09-09 22:41:20,989 | Tower HP: enemy_1=5652; confidence=1.00; observed_at_ms=19105.4; confirmed_at_ms=19205.6
+2026-09-09 22:41:23,747 | Tower HP: enemy_1=5631; confidence=0.99; observed_at_ms=19907.0; confirmed_at_ms=20007.2
+2026-09-09 22:41:26,874 | Сыграна карта: ice-golem; слот=3; уверенность=0.34; клетка=(столбец=2, строка=18); средняя позиция=(76.8, 883.1); время_боя=20809 мс; длительность=301 мс; детекций=9
+2026-09-09 22:41:27,202 | Tower HP: enemy_1=5610; confidence=1.00; observed_at_ms=20909.1; confirmed_at_ms=21109.5
+2026-09-09 22:41:30,609 | Tower HP: enemy_1=5589; confidence=1.00; observed_at_ms=22011.3; confirmed_at_ms=22211.7
+2026-09-09 22:41:33,107 | Tower HP: enemy_1=5568; confidence=0.99; observed_at_ms=22812.9; confirmed_at_ms=23013.3
+2026-09-09 22:41:35,224 | Сыграна карта: musketeer-hero; слот=2; уверенность=0.18; клетка=(столбец=3, строка=18); средняя позиция=(139.4, 886.3); время_боя=23581 мс; длительность=301 мс; детекций=9
+2026-09-09 22:41:35,349 | Tower HP: enemy_2=5216; confidence=0.99; observed_at_ms=23614.5; confirmed_at_ms=23814.9
+2026-09-09 22:41:35,953 | Tower HP: enemy_1=5547; confidence=1.00; observed_at_ms=23814.9; confirmed_at_ms=24015.4
+2026-09-09 22:41:37,133 | Сыграна карта: musketeer-hero; слот=2; уверенность=0.18; клетка=(столбец=3, строка=16); средняя позиция=(137.9, 791.0); время_боя=24182 мс; длительность=334 мс; детекций=4
+2026-09-09 22:41:39,667 | Tower HP: enemy_1=5526; confidence=1.00; observed_at_ms=25000.7; confirmed_at_ms=25201.1
+2026-09-09 22:41:43,352 | Сыграна карта: musketeer; слот=2; уверенность=0.20; клетка=(столбец=8, строка=24); средняя позиция=(458.3, 1193.2); время_боя=25969 мс; длительность=301 мс; детекций=10
+2026-09-09 22:41:52,754 | Сыграна карта: ice-golem; слот=2; уверенность=0.30; клетка=(столбец=6, строка=15); средняя позиция=(333.5, 724.8); время_боя=28274 мс; длительность=301 мс; детекций=8
+2026-09-09 22:41:56,952 | Tower HP: ally_1=5017; confidence=0.98; observed_at_ms=29509.8; confirmed_at_ms=29710.2
+2026-09-09 22:42:02,542 | Сыграна карта: musketeer-ev1; слот=1; уверенность=0.34; клетка=(столбец=10, строка=24); средняя позиция=(585.3, 1188.8); время_боя=31180 мс; длительность=301 мс; детекций=10
+2026-09-09 22:42:03,636 | Tower HP: ally_1=4996; confidence=1.00; observed_at_ms=31513.9; confirmed_at_ms=31714.3
+2026-09-09 22:42:06,335 | Сыграна карта: musketeer-ev1; слот=4; уверенность=0.39; клетка=(столбец=16, строка=18); средняя позиция=(970.8, 881.0); время_боя=32382 мс; длительность=301 мс; детекций=9
+2026-09-09 22:42:06,768 | Tower HP: ally_1=4975; confidence=1.00; observed_at_ms=32515.9; confirmed_at_ms=32716.3
+2026-09-09 22:42:09,961 | Tower HP: ally_1=4954; confidence=1.00; observed_at_ms=33501.2; confirmed_at_ms=33701.7
+2026-09-09 22:42:12,961 | Tower HP: ally_1=4933; confidence=1.00; observed_at_ms=34503.3; confirmed_at_ms=34703.7
+2026-09-09 22:42:13,578 | Сыграна карта: musketeer-ev1; слот=3; уверенность=0.62; клетка=(столбец=10, строка=20); средняя позиция=(585.8, 984.1); время_боя=34704 мс; длительность=301 мс; детекций=10
+2026-09-09 22:42:16,100 | Tower HP: ally_1=4912; confidence=1.00; observed_at_ms=35505.3; confirmed_at_ms=35705.7
+2026-09-09 22:42:19,240 | Tower HP: ally_1=4891; confidence=0.99; observed_at_ms=36607.5; confirmed_at_ms=36808.0
+2026-09-09 22:42:20,329 | Сыграна карта: skeletons; слот=4; уверенность=0.21; клетка=(столбец=10, строка=18); средняя позиция=(585.3, 882.7); время_боя=37042 мс; длительность=301 мс; детекций=10
+2026-09-09 22:42:21,967 | Tower HP: ally_1=4870; confidence=1.00; observed_at_ms=37609.6; confirmed_at_ms=37810.0
+2026-09-09 22:42:25,045 | Tower HP: ally_1=4849; confidence=1.00; observed_at_ms=38611.6; confirmed_at_ms=38812.0
+2026-09-09 22:42:27,891 | Сыграна карта: ice-golem; слот=4; уверенность=0.34; клетка=(столбец=6, строка=9); средняя позиция=(334.2, 418.6); время_боя=39413 мс; длительность=301 мс; детекций=9
+2026-09-10 08:54:10,453 | Tower HP: ally_1=5162; confidence=0.98; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-10 08:54:10,453 | Tower HP: ally_2=5213; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-10 08:54:10,453 | Tower HP: enemy_1=5936; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-10 08:54:10,453 | Tower HP: enemy_2=5344; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.2
+2026-09-10 08:54:13,475 | Сыграна карта: musketeer-ev1; слот=3; уверенность=0.48; клетка=(столбец=18, строка=24); средняя позиция=(1096.2, 1188.5); время_боя=1102 мс; длительность=301 мс; детекций=10
+2026-09-10 08:54:14,388 | Tower HP: ally_2=5192; confidence=0.99; observed_at_ms=1503.0; confirmed_at_ms=1603.3
+2026-09-10 08:54:17,993 | Tower HP: ally_2=5171; confidence=0.99; observed_at_ms=2605.3; confirmed_at_ms=2805.7
+2026-09-10 08:54:18,363 | Сыграна карта: skeletons; слот=1; уверенность=0.18; клетка=(столбец=3, строка=18); средняя позиция=(139.2, 889.0); время_боя=2739 мс; длительность=301 мс; детекций=10
+2026-09-10 08:54:20,698 | Tower HP: ally_2=5150; confidence=0.97; observed_at_ms=3507.1; confirmed_at_ms=3707.5
+2026-09-10 08:54:20,778 | Сыграна карта: skeletons; слот=1; уверенность=0.18; клетка=(столбец=3, строка=16); средняя позиция=(138.6, 783.6); время_боя=3507 мс; длительность=334 мс; детекций=4
+2026-09-10 08:54:29,114 | Сыграна карта: ice-golem; слот=2; уверенность=0.26; клетка=(столбец=6, строка=10); средняя позиция=(333.3, 469.1); время_боя=6179 мс; длительность=301 мс; детекций=10
+2026-09-10 08:54:32,323 | Сыграна карта: musketeer-ev1; слот=1; уверенность=0.30; клетка=(столбец=16, строка=18); средняя позиция=(970.9, 874.2); время_боя=7148 мс; длительность=367 мс; детекций=8
+2026-09-10 08:54:32,909 | Tower HP: ally_2=4925; confidence=1.00; observed_at_ms=7515.2; confirmed_at_ms=7615.4
+2026-09-10 08:54:37,421 | Tower HP: enemy_1=5915; confidence=1.00; observed_at_ms=8901.4; confirmed_at_ms=9001.6
+2026-09-10 08:54:39,782 | Сыграна карта: musketeer-ev1; слот=2; уверенность=0.33; клетка=(столбец=10, строка=21); средняя позиция=(585.3, 1042.7); время_боя=9369 мс; длительность=301 мс; детекций=10
+2026-09-10 08:54:40,562 | Tower HP: enemy_1=5894; confidence=1.00; observed_at_ms=9703.0; confirmed_at_ms=9803.2
+2026-09-10 08:54:44,525 | Tower HP: enemy_1=5799; confidence=1.00; observed_at_ms=10705.0; confirmed_at_ms=10805.2
+2026-09-10 08:54:48,981 | Tower HP: enemy_1=5778; confidence=1.00; observed_at_ms=11807.3; confirmed_at_ms=11907.5
+2026-09-10 08:54:49,263 | Сыграна карта: musketeer-ev1; слот=2; уверенность=0.57; клетка=(столбец=9, строка=24); средняя позиция=(522.8, 1192.3); время_боя=11740 мс; длительность=301 мс; детекций=8
+2026-09-10 08:54:52,969 | Tower HP: enemy_1=5757; confidence=1.00; observed_at_ms=12709.1; confirmed_at_ms=12809.3
+2026-09-10 08:54:57,272 | Tower HP: enemy_1=5736; confidence=1.00; observed_at_ms=13711.1; confirmed_at_ms=13811.3
+2026-09-10 08:55:01,866 | Tower HP: enemy_1=5715; confidence=0.99; observed_at_ms=14913.6; confirmed_at_ms=15013.8
+2026-09-10 08:55:03,978 | Сыграна карта: ice-golem; слот=4; уверенность=0.34; клетка=(столбец=5, строка=11); средняя позиция=(268.9, 526.4); время_боя=15381 мс; длительность=334 мс; детекций=10
+2026-09-10 08:55:04,885 | Tower HP: enemy_1=5694; confidence=1.00; observed_at_ms=15715.2; confirmed_at_ms=15915.6
+2026-09-10 08:55:13,002 | Tower HP: enemy_1=5673; confidence=1.00; observed_at_ms=18103.4; confirmed_at_ms=18303.8
+2026-09-10 08:55:13,223 | Сыграна карта: musketeer; слот=1; уверенность=0.20; клетка=(столбец=4, строка=18); средняя позиция=(204.3, 882.3); время_боя=18170 мс; длительность=301 мс; детекций=10
+2026-09-10 08:55:15,883 | Сыграна карта: musketeer; слот=1; уверенность=0.20; клетка=(столбец=4, строка=16); средняя позиция=(203.9, 778.7); время_боя=18972 мс; длительность=301 мс; детекций=7
+2026-09-10 08:55:15,906 | Tower HP: enemy_1=5652; confidence=1.00; observed_at_ms=19105.4; confirmed_at_ms=19205.6
+2026-09-10 08:55:18,939 | Tower HP: enemy_1=5631; confidence=0.99; observed_at_ms=19907.0; confirmed_at_ms=20007.2
+2026-09-10 08:55:22,201 | Сыграна карта: ice-golem; слот=3; уверенность=0.34; клетка=(столбец=2, строка=18); средняя позиция=(76.8, 883.1); время_боя=20809 мс; длительность=301 мс; детекций=9
+2026-09-10 08:55:22,947 | Tower HP: enemy_1=5610; confidence=0.99; observed_at_ms=21009.3; confirmed_at_ms=21209.7
+2026-09-10 08:55:26,314 | Tower HP: enemy_1=5589; confidence=1.00; observed_at_ms=22011.3; confirmed_at_ms=22211.7
+2026-09-10 08:55:29,279 | Tower HP: enemy_1=5568; confidence=1.00; observed_at_ms=22913.1; confirmed_at_ms=23113.5
+2026-09-10 08:55:30,957 | Tower HP: enemy_2=5216; confidence=0.99; observed_at_ms=23514.3; confirmed_at_ms=23714.7
+2026-09-10 08:55:31,108 | Сыграна карта: musketeer-hero; слот=2; уверенность=0.18; клетка=(столбец=3, строка=18); средняя позиция=(139.4, 886.3); время_боя=23581 мс; длительность=301 мс; детекций=9
+2026-09-10 08:55:32,084 | Tower HP: enemy_1=5547; confidence=1.00; observed_at_ms=23915.1; confirmed_at_ms=24115.6
+2026-09-10 08:55:32,912 | Сыграна карта: musketeer-hero; слот=2; уверенность=0.18; клетка=(столбец=3, строка=16); средняя позиция=(137.9, 791.0); время_боя=24182 мс; длительность=334 мс; детекций=4
+2026-09-10 08:55:34,970 | Tower HP: enemy_1=5526; confidence=0.99; observed_at_ms=24900.5; confirmed_at_ms=25100.9
+2026-09-10 08:55:38,891 | Сыграна карта: musketeer; слот=2; уверенность=0.20; клетка=(столбец=8, строка=24); средняя позиция=(458.3, 1193.2); время_боя=25969 мс; длительность=301 мс; детекций=10
+2026-09-10 08:58:54,508 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 08:58:54,508 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 08:58:54,509 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 08:58:54,509 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 08:58:54,783 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-10 08:58:56,976 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-10 08:58:58,813 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-10 08:59:02,703 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-10 08:59:06,311 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-10 08:59:06,530 | Tower HP: enemy_2=2039; confidence=1.00; observed_at_ms=4615.5; confirmed_at_ms=4800.1
+2026-09-10 08:59:09,227 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-10 08:59:11,216 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-10 08:59:18,911 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-10 08:59:27,583 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13309.4
+2026-09-10 09:00:16,758 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:00:16,758 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:00:16,758 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:00:16,758 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:00:17,051 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-10 09:00:19,338 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-10 09:00:21,227 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-10 09:00:24,475 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-10 09:00:28,118 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-10 09:00:29,213 | Tower HP: enemy_2=2039; confidence=0.99; observed_at_ms=4900.8; confirmed_at_ms=5102.2
+2026-09-10 09:00:31,116 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-10 09:00:32,312 | Tower HP: ally_1=2211; confidence=0.84; observed_at_ms=6109.2; confirmed_at_ms=6310.6
+2026-09-10 09:00:33,158 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-10 09:00:35,350 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7200.1; confirmed_at_ms=7401.5
+2026-09-10 09:00:40,852 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-10 09:00:49,577 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13309.4
+2026-09-10 09:01:01,883 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:01:01,883 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:01:01,883 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:01:01,883 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:01:02,185 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-10 09:01:04,507 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-10 09:01:06,401 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-10 09:01:09,662 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-10 09:01:13,412 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-10 09:01:13,653 | Tower HP: enemy_2=2039; confidence=1.00; observed_at_ms=4615.5; confirmed_at_ms=4800.1
+2026-09-10 09:01:16,439 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-10 09:01:17,734 | Tower HP: ally_1=2211; confidence=0.84; observed_at_ms=6109.2; confirmed_at_ms=6310.6
+2026-09-10 09:01:18,493 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-10 09:01:20,820 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7200.1; confirmed_at_ms=7401.5
+2026-09-10 09:01:26,368 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-10 09:01:35,264 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13309.4
+2026-09-10 09:02:08,662 | Tower HP: ally_1=2216; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:02:08,663 | Tower HP: ally_2=3052; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:02:08,663 | Tower HP: enemy_1=2667; confidence=1.00; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:02:08,664 | Tower HP: enemy_2=2211; confidence=0.99; observed_at_ms=0.0; confirmed_at_ms=100.7
+2026-09-10 09:02:08,958 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=10, строка=21); средняя позиция=(587.8, 1046.9); время_боя=0 мс; длительность=336 мс; детекций=4
+2026-09-10 09:02:11,272 | Сыграна карта: unknown; слот=?; уверенность=0.00; клетка=(столбец=16, строка=32); средняя позиция=(970.5, 1610.2); время_боя=1007 мс; длительность=302 мс; детекций=8
+2026-09-10 09:02:13,211 | Сыграна карта: fireball; слот=4; уверенность=0.95; клетка=(столбец=13, строка=10); средняя позиция=(779.7, 468.8); время_боя=1813 мс; длительность=302 мс; детекций=10
+2026-09-10 09:02:16,589 | Сыграна карта: ice-spirit; слот=1; уверенность=0.98; клетка=(столбец=10, строка=19); средняя позиция=(586.0, 936.4); время_боя=3105 мс; длительность=302 мс; детекций=9
+2026-09-10 09:02:20,331 | Сыграна карта: skeletons-ev1; слот=4; уверенность=0.99; клетка=(столбец=5, строка=20); средняя позиция=(266.9, 981.2); время_боя=4515 мс; длительность=319 мс; детекций=11
+2026-09-10 09:02:21,033 | Tower HP: enemy_2=2039; confidence=0.99; observed_at_ms=4800.1; confirmed_at_ms=5001.5
+2026-09-10 09:02:23,360 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=28); средняя позиция=(267.6, 1399.8); время_боя=5639 мс; длительность=302 мс; детекций=6
+2026-09-10 09:02:24,665 | Tower HP: ally_1=2211; confidence=0.84; observed_at_ms=6109.2; confirmed_at_ms=6310.6
+2026-09-10 09:02:25,420 | Сыграна карта: the-log; слот=2; уверенность=0.99; клетка=(столбец=5, строка=26); средняя позиция=(266.4, 1289.0); время_боя=6411 мс; длительность=302 мс; детекций=5
+2026-09-10 09:02:27,524 | Tower HP: ally_1=2216; confidence=0.99; observed_at_ms=7200.1; confirmed_at_ms=7300.8
+2026-09-10 09:02:33,419 | Сыграна карта: hog-rider; слот=4; уверенность=1.00; клетка=(столбец=17, строка=18); средняя позиция=(1033.6, 885.1); время_боя=9214 мс; длительность=302 мс; детекций=9
+2026-09-10 09:02:42,444 | Tower HP: ally_2=3017; confidence=1.00; observed_at_ms=13108.0; confirmed_at_ms=13309.4

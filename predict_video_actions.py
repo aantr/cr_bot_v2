@@ -3,6 +3,7 @@
 From v2: python predict_video_actions.py battle.mp4 --checkpoint runs/offline_rl/first/best.pt
 Displays Tracking/Arena windows; Q exits. No clicks or game control are performed.
 Saving annotated video or JSONL recommendations is opt-in.
+Both imitation and IQL checkpoints are supported; only the actor runs here.
 """
 from __future__ import annotations
 
@@ -64,6 +65,29 @@ class VideoActionAdvisor:
                                     if after + self.config.uncertainty_ms >= cutoff]
         collector.hp_rewards.events[:] = [event for event in collector.hp_rewards.events
                                          if event["timestamp_ms"] > cutoff]
+        if getattr(self.predictor, "history_mode", "executed_feedback") == "observations_only":
+            # IQL consumes only causally observed states. Keep the true episode
+            # step counter; no delayed event backfilling/rebuilding is necessary.
+            self.predictor.observe(collector.observations[-1])
+        else:
+            self._rebuild_feedback_history(timestamp)
+        self.latest = self.predictor.predict(allowed_cells=self.allowed_cells)
+        self.latest["frame_number"] = frame["frame_number"]
+        self.last_prediction_ms = timestamp
+        self.prediction_count += 1
+        recommendation = self.latest
+        detail = (f"PLAY {recommendation['card']} slot={recommendation['slot']} "
+                  f"row={recommendation['row']} col={recommendation['column']}"
+                  if recommendation["type"] == "play" else "WAIT")
+        print(f"[policy {timestamp / 1000:.2f}s] {detail} "
+              f"p={recommendation['confidence']['action_type']:.3f}", flush=True)
+        if self.output is not None:
+            self.output.write(json.dumps(recommendation, ensure_ascii=False, allow_nan=False) + "\n")
+            self.output.flush()
+
+    def _rebuild_feedback_history(self, timestamp):
+        """Original imitation feedback contract; IQL does not use this path."""
+        collector = self.collector
         self.predictor.reset(self.battle_id)
         self.predictor.observe(collector.observations[0])
         if len(collector.observations) > 1:
@@ -84,19 +108,6 @@ class VideoActionAdvisor:
                     observed, previous_action=transition["action"], previous_action_valid=valid,
                     previous_reward=transition["reward"] if self.hp_enabled else None,
                 )
-        self.latest = self.predictor.predict(allowed_cells=self.allowed_cells)
-        self.latest["frame_number"] = frame["frame_number"]
-        self.last_prediction_ms = timestamp
-        self.prediction_count += 1
-        recommendation = self.latest
-        detail = (f"PLAY {recommendation['card']} slot={recommendation['slot']} "
-                  f"row={recommendation['row']} col={recommendation['column']}"
-                  if recommendation["type"] == "play" else "WAIT")
-        print(f"[policy {timestamp / 1000:.2f}s] {detail} "
-              f"p={recommendation['confidence']['action_type']:.3f}", flush=True)
-        if self.output is not None:
-            self.output.write(json.dumps(recommendation, ensure_ascii=False, allow_nan=False) + "\n")
-            self.output.flush()
 
     def annotate(self, frame, frame_data):
         """Draw only on the output image, never on perception's input crops."""
@@ -151,7 +162,7 @@ def main(argv=None):
     parser.add_argument("--device", default="auto", help="Policy device only; detector device remains in predict_video_kalman.py")
     parser.add_argument("--state-fps", type=float, default=5.0)
     parser.add_argument("--detection-fps", type=float, default=30.0)
-    parser.add_argument("--feedback-delay-ms", type=float, default=1000)
+    parser.add_argument("--feedback-delay-ms", type=float, default=1000, help="Imitation feedback only; unused by IQL")
     parser.add_argument("--min-card-confidence", type=float, default=.7)
     parser.add_argument("--card-costs", type=Path, help="JSON card-name -> elixir cost mapping")
     parser.add_argument("--allowed-cells", type=Path, help="JSON boolean [32,18] or [4,32,18] deployment mask")
@@ -184,6 +195,7 @@ def main(argv=None):
         cells = json.loads(args.allowed_cells.read_text(encoding="utf-8-sig")) if args.allowed_cells else None
         predictor = ActionPredictor(args.checkpoint, device=args.device, card_costs=costs,
                                     min_card_confidence=args.min_card_confidence)
+        print(f"Policy: {predictor.policy_kind}; history: {predictor.history_mode}", flush=True)
         # Lazy import: --help and adapter unit tests don't load YOLO/OCR.
         import predict_video_kalman as perception
 

@@ -29,10 +29,12 @@ if not __package__:
     from offline_rl.dataset import (ObservationEncoder, Normalization, Vocabulary, label,
                                     validate_observation, load_trajectory, GRID_SIDES, TOWERS, PHASES)
     from offline_rl.starformer import StARformer, StARformerConfig
+    from offline_rl.history_features import policy_inputs
 else:
     from .dataset import (ObservationEncoder, Normalization, Vocabulary, label,
                           validate_observation, load_trajectory, GRID_SIDES, TOWERS, PHASES)
     from .starformer import StARformer, StARformerConfig
+    from .history_features import policy_inputs
 
 
 def default_field_layout():
@@ -88,8 +90,14 @@ class ActionPredictor:
                                            or (self.device.index or 0) >= torch.cuda.device_count()):
             raise ValueError(f"CUDA device {self.device} unavailable; use --device cpu")
         saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
-        if saved.get("checkpoint_version") != 1 or saved.get("policy_kind") != "imitation":
-            raise ValueError("Expected a version-1 imitation checkpoint from train.py")
+        if saved.get("checkpoint_version") != 1 or saved.get("policy_kind") not in {"imitation", "iql"}:
+            raise ValueError("Expected a version-1 imitation or IQL checkpoint")
+        self.policy_kind = saved["policy_kind"]
+        self.history_mode = saved.get("history_mode", "executed_feedback")
+        if self.policy_kind == "iql" and (saved.get("iql_version") != 1 or self.history_mode != "observations_only"):
+            raise ValueError("Unsupported IQL checkpoint/history mode")
+        if self.history_mode not in {"executed_feedback", "observations_only"}:
+            raise ValueError("Unsupported checkpoint history mode")
         encoding = saved["encoding_config"]
         if (encoding.get("encoding_version") != 1 or encoding.get("grid_sides") != list(GRID_SIDES)
                 or encoding.get("tower_order") != list(TOWERS) or encoding.get("phases") != list(PHASES)):
@@ -199,10 +207,7 @@ class ActionPredictor:
             [entry["step"] for entry in self._history], self.field_layout, self.battle_id,
         )
         # No target placeholders or future-return fields enter online inference.
-        inputs = {name: sample[name] for name in (
-            "states", "terrain_mask", "previous_actions", "previous_action_valid",
-            "previous_rewards", "previous_reward_mask", "attention_mask", "padding_mask",
-            "causal_mask", "step_indices", "sequence_length", "battle_id")}
+        inputs = policy_inputs(sample, self.history_mode)
         return default_collate([inputs])
 
     @torch.inference_mode()

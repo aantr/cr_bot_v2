@@ -137,7 +137,8 @@ class StARformer(nn.Module):
             raise ValueError("Each sequence needs >=1 real step, followed only by right padding")
         return real
 
-    def forward(self, batch: dict) -> dict[str, torch.Tensor]:
+    def encode(self, batch: dict) -> tuple[torch.Tensor, torch.Tensor]:
+        """Causal context and hand tokens, reusable by independent IQL critics."""
         real = self._real_steps(batch)
         B, T = real.shape
         if T > self.config.sequence_length:
@@ -212,6 +213,12 @@ class StARformer(nn.Module):
         # Construct our own causal mask: callers cannot accidentally enable future attention.
         causal = torch.ones(T, T, dtype=torch.bool, device=device).triu(1)
         context = self.temporal_transformer(steps, mask=causal, src_key_padding_mask=~real)
+        return context, hand
+
+    def forward(self, batch: dict) -> dict[str, torch.Tensor]:
+        context, hand = self.encode(batch)
+        real = batch["attention_mask"]
+        B, T = real.shape
         per_slot = self.slot_fusion(torch.cat((context.unsqueeze(2).expand(-1, -1, 4, -1),
                                                hand), dim=-1))
         outputs = {"action_type": self.action_head(context),

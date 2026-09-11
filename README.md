@@ -219,10 +219,11 @@ restore vocabularies via `Vocabulary.from_dict(...)` and normalization via
 
 `offline_rl/starformer.py` implements a project-specific StARformer-inspired
 local-then-temporal policy, not a reproduction of the original architecture or
-a loader for its pretrained weights. This first version learns imitation;
-it does not optimize returns or consume return-to-go. `train.py` trains this
-policy; `predict_action.py` loads its checkpoints and maintains observed battle
-history for recommendations. Neither module executes actions in the game.
+a loader for its pretrained weights. `train.py` learns imitation without
+optimizing returns or consuming return-to-go. The separate `train_iql.py` trains
+the same actor with offline RL (see below). `predict_action.py` loads either
+checkpoint kind and maintains observed battle history for recommendations.
+Neither pipeline executes actions in the game.
 
 Example from `v2`, using the `dataset` and `batch` created above:
 
@@ -286,6 +287,140 @@ Run dataset and model tests from the project root:
 
 ```powershell
 .\v2\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_offline_rl_*.py" -v
+```
+
+## IQL: обучение offline RL
+
+Новый путь обучения не заменяет imitation: `offline_rl/train.py` остаётся
+behavior cloning, а `offline_rl/train_iql.py` обучает **Implicit Q-Learning**.
+Дополнительные библиотеки или симулятор не нужны: используется установленный PyTorch.
+Формулы сверены с [реализацией авторов IQL](https://github.com/ikostrikov/implicit_q_learning).
+Здесь они адаптированы к дискретному действию `wait` или `(slot, row, column)`.
+
+Новые файлы:
+
+- `offline_rl/iql_dataset.py`: пары историй до действия и после него, действие,
+  награда, уже рассчитанный временной discount. Загружает существующие JSON боёв.
+- `offline_rl/iql.py`: actor, два Q-критика, V-сеть, две замороженные целевые
+  Q-сети с EMA. У каждой сети независимый StARformer-энкодер истории.
+- `offline_rl/train_iql.py`: обучение, статистика, validation по отдельным боям,
+  сохранение всех сетей/оптимизаторов и восстановление из `last.pt`.
+- `offline_rl/history_features.py`: общий контракт входов обучения и предсказания.
+
+На каждом шаге обучения:
+
+```text
+q_data = min(target_Q1(history, action), target_Q2(history, action))
+V_loss = mean(expectile_loss(q_data - V(history), tau=0.7))
+target = reward / normalization.reward + discount * V(next_history)
+Q_loss = MSE(Q1, target) + MSE(Q2, target)
+weight = min(exp(beta * (q_data - V(history))), 100), beta=3
+actor_loss = mean(-stop_gradient(weight) * log_probability(dataset_action))
+target_Q <- 0.995 * target_Q + 0.005 * Q
+```
+
+Bellman-target и веса actor отсоединены от градиентов; actor не изменяет Q/V.
+Для play логарифм вероятности складывается из type, slot и координат,
+условных на выбранный слот. Для wait учитывается только type. Карта определяется
+содержимым слота руки. `discount` из JSON уже учитывает время и равен нулю при
+`terminated`: повторного умножения на gamma нет. `truncated` сам по себе не
+обнуляет bootstrap. RTG и будущие наблюдения не подаются actor на вход.
+
+IQL сохраняет `history_mode=observations_only`: actor и критики видят последние
+наблюдения поля, руки, HP, элексира и времени, но не прошлые action/reward-токены.
+Это предотвращает различие между ретроспективными метками JSON и задержанным
+подтверждением действий в видео. Награды по-прежнему обучают критики через
+Bellman-target. Существующие imitation-checkpoint сохраняют прежний режим входов.
+
+### Запуск IQL
+
+Все команды ниже выполняются **из `v2`**, интерпретатор берётся из `v2/venv`.
+Сначала извлеките целые бои с правильным результатом, включая победы и поражения:
+
+```powershell
+.\venv\Scripts\python.exe build_trajectories.py battle_win.mp4 --result win
+.\venv\Scripts\python.exe build_trajectories.py battle_loss.mp4 --result loss
+.\venv\Scripts\python.exe offline_rl/train_iql.py offline_rl/trajectories --output runs/offline_rl/iql_first --epochs 50 --device 0 --validation-fraction 0.2
+```
+
+Для пробного запуска на имеющемся единственном исправленном бою:
+
+```powershell
+.\venv\Scripts\python.exe offline_rl/train_iql.py offline_rl/trajectories_repaired --output runs/offline_rl/iql_single --epochs 20 --device 0 --validation-fraction 0
+```
+
+Validation делится по идентичности целых боёв, до построения окон. Нельзя класть
+оригинальную и исправленную копии одного боя в одну обучающую выборку: IQL
+отклоняет дубликаты. При одном бое нужен `--validation-fraction 0`; это проверка
+работоспособности, не оценка обобщения. По умолчанию batch=2, context=32,
+max_units=128, d_model=128, dropout=0. При нехватке GPU-памяти начните новый запуск
+с `--batch-size 1`; уменьшение `--sequence-length 16` также сокращает контекст.
+`--device cpu --num-threads 4` позволяет обучаться без CUDA.
+
+Продолжить обучение (epochs — суммарное число эпох, а не число добавляемых):
+
+```powershell
+.\venv\Scripts\python.exe offline_rl/train_iql.py --resume runs/offline_rl/iql_first/last.pt --epochs 100 --device 0
+```
+
+Восстанавливаются actor, Q1/Q2/V, target-Q, четыре оптимизатора, конфигурация,
+разбиение файлов и RNG. Изменённые JSON, конфигурация или откат на старый checkpoint
+в уже продолженном каталоге отклоняются. Для новых данных создайте новый запуск.
+`--init-actor runs/offline_rl/first/best.pt` позволяет начать IQL с imitation-actor
+(или другого IQL-actor), но не переносит критики/оптимизаторы. Архитектура
+наследуется, словарь и нормализация должны совпасть; при переключении с imitation
+изменяется контракт истории, поэтому потребуется дообучение. Можно обучать с нуля.
+
+`history.json` содержит Q/V loss, weighted actor loss, **невзвешенный** joint
+policy NLL, advantage/веса, долю ограниченных весов, play precision/recall и
+точность целого действия. `best.pt` выбирается по минимальному validation NLL
+(без validation — training NLL); это лишь прокси соответствия записанным
+действиям, **не win rate и не оценка ценности новой политики**. `last.pt` сохраняется
+после каждой эпохи. Early stopping по NLL опционален: `--patience 10`; по умолчанию
+отключён, поскольку NLL не измеряет RL-качество.
+
+### Предсказание IQL
+
+```powershell
+.\venv\Scripts\python.exe predict_video_actions.py battle.mp4 --checkpoint runs/offline_rl/iql_first/best.pt --device 0 --show-cards
+.\venv\Scripts\python.exe offline_rl/predict_action.py runs/offline_rl/iql_first/best.pt --replay offline_rl/trajectories_repaired/last_20_percent-fe680f8c497c.json --limit 10
+```
+
+Оба существующих предиктора распознают тип checkpoint автоматически. Во время
+предсказания запускается **только actor**; Q/V не нужны. В API достаточно
+`predictor.observe(observation)` и `predictor.predict()`; между боями вызывайте
+`predictor.reset()`. Используйте ту же частоту наблюдений (обычно 5 FPS) и время
+от начала боя, что при извлечении. В видео-примере IQL не ждёт подтверждения
+событий и не использует `--feedback-delay-ms`. Вывод — рекомендация, не обнаружение
+фактического розыгрыша и не автоматическое нажатие в игре. Проверка доступности
+элексира требует `--card-costs`, ограничения размещения — `--allowed-cells`.
+
+### Ограничения разметки для IQL
+
+Для Q нужен полностью известный action. Поэтому неизвестные/множественные
+действия, неизвестные карты и `position_valid=false` исключаются из IQL. Они
+не становятся wait; промежуточные наблюдения остаются в истории; Bellman-переходы
+не перескакивают через пропущенные интервалы. Последнее наблюдение боя доступно
+для next_history. Частичные розыгрыши по-прежнему можно использовать в imitation.
+
+Статистика перед обучением показывает сохранённые play/noop, причины исключений,
+потерянные конечные переходы и ненулевые награды. Если неизвестен action на
+конечном переходе, его награда за победу/поражение **не переносится на придуманное
+действие**. Большие пробелы разметки ухудшают обучение V и распространение наград:
+последующее состояние может не иметь собственной надёжной обучающей пары.
+Нужны качественная разметка, целые бои и разнообразие результатов.
+
+На текущем исправленном `last_20_percent` из 251 перехода пригодны 63:
+58 wait и 5 play с известной клеткой. Ещё 3 play имеют неоднозначную клетку,
+185 переходов невалидны. Из 7 ненулевых наград сохраняются 3 награды за изменение
+HP; 4 исключаются, включая конечную награду за победу. На этих данных можно
+проверить запуск, но нельзя ожидать освоения игры или достоверного роста win rate.
+
+Проверки (из корня проекта):
+
+```powershell
+.\v2\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_offline_rl_*.py" -v
+.\v2\venv\Scripts\python.exe -m unittest discover -s v2/tests -p "test_predict_video_actions.py" -v
 ```
 
 ## Train the imitation policy

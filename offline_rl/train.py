@@ -300,6 +300,8 @@ def train(args) -> Path:
         checkpoint = torch.load(args.resume, map_location="cpu", weights_only=True)
         if checkpoint.get("checkpoint_version") != 1:
             raise ValueError("Unsupported training checkpoint version")
+        if checkpoint.get("policy_kind") != "imitation":
+            raise ValueError("train.py resumes imitation only; use train_iql.py for IQL checkpoints")
         saved = checkpoint["train_config"]
         for key, value in requested.items():
             if saved[key] != value:

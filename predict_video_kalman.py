@@ -48,7 +48,7 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots/last_20_percent.mp4"
+INPUT_VIDEO = SCRIPT_DIR / "screenshots\\my_dataset\\oyassuu-hog-top-10\\oyassuu-hog-top10_00.00.04.306-00.03.01.512-seg01.mp4"
 OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280

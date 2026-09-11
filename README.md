@@ -1,3 +1,22 @@
+## Unit team from level-bar color
+
+`predict_video_kalman.py` counts tinted pixels in the clean detected level-bar
+crop (OpenCV BGR), rather than comparing weighted mean channels:
+
+- Blue: `B > max(G, R)` and `B - max(G, R) >= FIELD_COLOR_BLUE_MIN_DOMINANCE`.
+- Red: `R > max(G, B)` and `R - max(G, B) >= FIELD_COLOR_RED_MIN_DOMINANCE`.
+- Both constants default to **10** on the 0..255 channel scale. Lower values
+  admit weaker tints; even 0 excludes equal channels, gray, white and black.
+- More blue pixels means `ally`; more red means `enemy`. Equal counts, including
+  zero evidence, mean `unknown` (gray field cell). Each pixel has one vote.
+
+The same result drives field coloring and exported unit `side`, including the
+shared video advisor and trajectory extraction. Kalman-only tracks keep the last
+measured pixel counts. `mean_color_bgr` remains diagnostic only;
+`objects[].level_bar_pixel_counts` stores `[blue_count, red_count]`.
+Existing trajectory JSONs are unchanged: re-extract videos to update their sides;
+`--relabel-json` alone does not rerun pixel recognition.
+
 ## Offline RL trajectories
 
 Run from `v2` with its virtual environment. Each video must contain one complete
@@ -425,6 +444,82 @@ HP; 4 исключаются, включая конечную награду з�
 
 ## Train the imitation policy
 
+### Balanced imitation batches and `best_play.pt`
+
+To counter rare play labels, `offline_rl/train.py` now accepts
+`--sampling balanced`. The old/default `--sampling natural` is unchanged.
+Balanced mode requires `--supervise last` and an even batch size >=2. With
+`--batch-size 4`, **every training batch contains two play and two noop windows**.
+Unknown final labels are excluded from sampling, not converted to wait. Their
+observations still appear in causal history. Partial-position plays participate
+in type/slot learning; their coordinate targets stay masked.
+
+The sampler (`offline_rl/balanced_sampling.py`) shuffles each class pool, covers
+the larger pool once per epoch (padding the last batch if needed), and cycles
+the smaller pool. This increases the number of updates per epoch and repeatedly
+uses rare plays; it does not create new independent examples. Start with
+`--play-weight 1` instead of combining oversampling with weights of 50 or 100.
+
+From `v2`, train on all three current JSONs as a memorization diagnostic:
+
+```powershell
+.\venv\Scripts\python.exe offline_rl/train.py offline_rl/trajectories --output runs/offline_rl/imitation_balanced --sampling balanced --batch-size 4 --play-weight 1 --epochs 50 --validation-fraction 0 --patience 0 --device 0
+```
+
+To first check one battle, replace the source directory with one JSON path and
+choose another output directory. `--dropout 0 --weight-decay 0` can be used for
+that controlled overfitting check; success on it does not establish generalization.
+For a held-out battle, start a new run with `--validation-fraction 0.2` instead:
+with the current three identities this uses two for training and one for validation.
+**Validation is never balanced.** Without validation, an extra `train_eval` pass
+runs after each epoch: eval mode, no dropout, original windows/frequencies,
+without repeating plays. It is still training-set evaluation, not a test set.
+
+Saved files:
+
+- `last.pt`: all training state for resume, including sampler RNG and best scores.
+- `best.pt`: lowest validation loss; in balanced runs without validation, lowest
+  natural `train_eval` loss (not the oversampled optimization loss).
+- `best_play.pt`: highest play F1 on validation or natural `train_eval`. Lower
+  loss breaks an F1 tie. F1 penalizes both missed and false play predictions.
+  Selection uses raw `P(play)>0.5`, not your preview's custom threshold or masks.
+  Both labeled play and noop must exist in the evaluation split; otherwise this
+  checkpoint is not created and the trainer warns. An initial F1=0 checkpoint
+  can exist: its filename alone is not evidence that the model learned to play.
+- `history.json`: `train`, `validation`, and (without validation) `train_eval`,
+  including `play_f1`, `play_precision`, `play_recall`, `missed_plays`,
+  `false_positive_plays`, and separate card/cell/full-action accuracy.
+
+F1 measures **exact labeled decision steps**, not temporally matched game events,
+correct placement or win rate. False/missed recognition labels affect it.
+Early stopping still uses loss, not F1; `--patience 0` disables it for this diagnostic.
+
+Preview the new play-selected checkpoint at the evaluation threshold first:
+
+```powershell
+.\venv\Scripts\python.exe predict_video_actions.py screenshots/my_dataset/oyassuu-hog-top-10/oyassuu-hog-top10_00.03.08.512-00.06.36.525-seg02.mp4 --checkpoint runs/offline_rl/imitation_balanced/best_play.pt --device 0 --show-cards --play-threshold 0.5
+```
+
+Continue the same balanced run:
+
+```powershell
+.\venv\Scripts\python.exe offline_rl/train.py --resume runs/offline_rl/imitation_balanced/last.pt --epochs 100 --device 0
+```
+
+Old checkpoints remain loadable and resume as natural sampling. Changing
+natural/balanced mode, batch size or loss weights requires a **new run**, not
+`--resume`. `best_play.pt` has the same actor format and works in both predictors.
+No recognition changes, JSON relabeling, or IQL sampling changes are involved.
+
+Local single-battle check: `runs/offline_rl/imitation_balanced_one` was trained
+from scratch for 10 epochs on `seg03` with balanced batches of 4, play weight 1,
+dropout 0 and weight decay 0 (other model settings unchanged). Its
+`best_play.pt` is epoch 7: on 366 original labeled steps it detects 14/15 plays,
+misses 1, produces 4 false plays, and reaches F1=0.8485 at threshold 0.5.
+These are training-battle replay metrics, not performance on new videos.
+
+### Original natural-sampling workflow
+
 Pass JSON trajectories, not raw videos. From `v2`, with at least two battles:
 
 ```powershell
@@ -594,6 +689,22 @@ Online features and offline training now share `ObservationEncoder` in
 `dataset.py`; regression tests compare tensors exactly, including rolling windows.
 
 ## Video example with action recommendations
+
+Both imitation and IQL support `--play-threshold` (default `0.5`) in
+`predict_video_actions.py` and `offline_rl/predict_action.py`. For example, add
+`--play-threshold 0.35` to your existing command to propose plays more often,
+without retraining. The rule is strictly `P(play) > threshold`; equality waits,
+preserving the original default behavior. Valid thresholds are finite numbers
+in `[0,1]`. Lower thresholds may increase false plays; this is a decoding control,
+not evidence of improved gameplay.
+
+The video overlay and console show raw `P(play)` and the active threshold for
+both PLAY and WAIT. JSONL includes `play_probability` and `play_threshold`.
+`confidence.action_type` retains its original meaning (raw probability of the
+returned action type). Scores are not calibrated win probabilities. Empty/unknown
+cards, low hand confidence, supplied cost checks and cell/slot masks still block
+plays even above threshold; the overlay explicitly shows when no allowed play
+exists. API: `ActionPredictor(checkpoint, play_threshold=0.35)`.
 
 `predict_video_actions.py` combines the existing `predict_video_kalman.py`
 perception pipeline and the trained policy. From `v2`:

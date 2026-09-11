@@ -80,7 +80,9 @@ class VideoActionAdvisor:
                   f"row={recommendation['row']} col={recommendation['column']}"
                   if recommendation["type"] == "play" else "WAIT")
         print(f"[policy {timestamp / 1000:.2f}s] {detail} "
-              f"p={recommendation['confidence']['action_type']:.3f}", flush=True)
+              f"P(play)={recommendation['play_probability']:.3f} "
+              f"threshold={recommendation['play_threshold']:.3f} "
+              f"reason={recommendation['reason']}", flush=True)
         if self.output is not None:
             self.output.write(json.dumps(recommendation, ensure_ascii=False, allow_nan=False) + "\n")
             self.output.flush()
@@ -134,11 +136,14 @@ class VideoActionAdvisor:
         first = (f"AI: PLAY {recommendation['card']} | slot {recommendation['slot']} | "
                  f"row {recommendation['row']}, col {recommendation['column']}" if play else "AI: WAIT (noop)")
         age_ms = frame_data["timestamp_ms"] - recommendation["observation_timestamp_ms"]
-        second = (f"score {recommendation['confidence']['action_type']:.3f} | "
+        second = (f"P(play) {recommendation['play_probability']:.3f} | "
+                  f"threshold {recommendation['play_threshold']:.3f} | "
                   f"history {recommendation['history_length']} | age {age_ms:.0f} ms | recommendation only")
         checks = recommendation["constraints"]
         third = (f"Elixir check: {'ON' if checks['elixir_checked'] else 'OFF (provide costs)'} | "
                  f"Placement mask: {'ON' if checks['placement_mask_supplied'] else 'OFF'}")
+        if recommendation["reason"] == "no_allowed_play":
+            third += " | PLAY blocked: no allowed slot/cell"
         scale = max(.45, width / 1100)
         line_height = max(23, round(34 * scale))
         top = 84  # Leave the original frame/tracker counters visible.
@@ -164,6 +169,8 @@ def main(argv=None):
     parser.add_argument("--detection-fps", type=float, default=30.0)
     parser.add_argument("--feedback-delay-ms", type=float, default=1000, help="Imitation feedback only; unused by IQL")
     parser.add_argument("--min-card-confidence", type=float, default=.7)
+    parser.add_argument("--play-threshold", type=float, default=0.5,
+                        help="Play if P(play) exceeds this threshold in [0,1]; default 0.5; lower means more plays")
     parser.add_argument("--card-costs", type=Path, help="JSON card-name -> elixir cost mapping")
     parser.add_argument("--allowed-cells", type=Path, help="JSON boolean [32,18] or [4,32,18] deployment mask")
     parser.add_argument("--damage-scale", type=float, default=1000)
@@ -194,8 +201,10 @@ def main(argv=None):
         costs = json.loads(args.card_costs.read_text(encoding="utf-8-sig")) if args.card_costs else None
         cells = json.loads(args.allowed_cells.read_text(encoding="utf-8-sig")) if args.allowed_cells else None
         predictor = ActionPredictor(args.checkpoint, device=args.device, card_costs=costs,
-                                    min_card_confidence=args.min_card_confidence)
-        print(f"Policy: {predictor.policy_kind}; history: {predictor.history_mode}", flush=True)
+                                    min_card_confidence=args.min_card_confidence,
+                                    play_threshold=args.play_threshold)
+        print(f"Policy: {predictor.policy_kind}; history: {predictor.history_mode}; "
+              f"play threshold: {predictor.play_threshold:g}", flush=True)
         # Lazy import: --help and adapter unit tests don't load YOLO/OCR.
         import predict_video_kalman as perception
 

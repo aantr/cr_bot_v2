@@ -48,11 +48,11 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / "screenshots\\my_dataset\\oyassuu-hog-top-10\\oyassuu-hog-top10_00.00.04.306-00.03.01.512-seg01.mp4"
-OUTPUT_VIDEO = SCRIPT_DIR / "screenshots/output_tracked_kalman.mp4"
+INPUT_VIDEO = SCRIPT_DIR / r"screenshots\my_dataset\oyassuu-hog-top-10\oyassuu-hog-top10_00.50.13.872-00.55.07.397-seg13.mp4"
+OUTPUT_VIDEO = SCRIPT_DIR / r"screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
-CONF = 0.30
+CONF = 0.40
 IOU = 0.50
 MAX_DET = 500
 DEVICE = 0
@@ -89,7 +89,7 @@ TOWER_HP_ENABLE_MKLDNN = False  # Paddle 3.0.0rc1 fails on this model with MKL-D
 TOWER_HP_STARTUP_TIMEOUT = 180.0  # Includes the first model download.
 TOWER_HP_REQUEST_TIMEOUT = 15.0  # Kill a stuck worker; never reuse a late result.
 TOWER_HP_LOG_PATH = OUTPUT_VIDEO.with_suffix(".tower_hp.jsonl")  # Appended per run.
-show_tower_hp = False
+show_tower_hp = True
 
 if TOWER_HP_ENABLED:
     if not math.isfinite(TOWER_HP_FPS) or TOWER_HP_FPS <= 0:
@@ -110,16 +110,18 @@ if TOWER_HP_ENABLED:
     if not isinstance(TOWER_HP_CPU_THREADS, int) or TOWER_HP_CPU_THREADS < 1:
         raise ValueError("TOWER_HP_CPU_THREADS must be a positive integer")
 
-# Field cell color: compare R * RED_WEIGHT with B * BLUE_WEIGHT.
-# Increase a channel's weight to select its color more often.
-FIELD_COLOR_RED_WEIGHT = 1.0
-FIELD_COLOR_BLUE_WEIGHT = 1.5
+# Level-bar team: count pixels whose B/R channel exceeds BOTH other channels.
+# Minimum channel difference in 0..255 units (10 includes mildly tinted pixels).
+# Lower values admit weaker tints; 0 still requires strictly greater B/R.
+# Compare raw pixel counts, without channel weights. Ties mean unknown.
+FIELD_COLOR_BLUE_MIN_DOMINANCE = 10
+FIELD_COLOR_RED_MIN_DOMINANCE = 10
 
 if any(
-    not math.isfinite(weight) or weight <= 0
-    for weight in (FIELD_COLOR_RED_WEIGHT, FIELD_COLOR_BLUE_WEIGHT)
+    not math.isfinite(value) or not 0 <= value <= 255
+    for value in (FIELD_COLOR_BLUE_MIN_DOMINANCE, FIELD_COLOR_RED_MIN_DOMINANCE)
 ):
-    raise ValueError("Field color weights must be finite positive numbers")
+    raise ValueError("Field color minimum dominance must be finite and in 0..255")
 
 if not (
     0 <= ELIXIR_DARK_BRIGHTNESS_MAX
@@ -597,20 +599,44 @@ def draw_card_event_markers(
         )
 
 
+def count_level_bar_pixels(crop: np.ndarray | None) -> tuple[int, int]:
+    """Return (blue pixels, red pixels) from a clean OpenCV uint8 BGR crop.
+
+    Green/neutral pixels do not vote. Signed arithmetic prevents uint8 wrap.
+    Each qualifying pixel gets one vote, regardless of brightness/saturation.
+    """
+    if crop is None or crop.size == 0:
+        return 0, 0
+    if crop.ndim != 3 or crop.shape[2] != 3 or crop.dtype != np.uint8:
+        raise ValueError("Level-bar crop must be a uint8 BGR image")
+    blue, green, red = np.moveaxis(crop.astype(np.int16), -1, 0)
+    blue_difference = blue - np.maximum(green, red)
+    red_difference = red - np.maximum(green, blue)
+    blue_pixels = np.count_nonzero(
+        (blue_difference > 0) & (blue_difference >= FIELD_COLOR_BLUE_MIN_DOMINANCE)
+    )
+    red_pixels = np.count_nonzero(
+        (red_difference > 0) & (red_difference >= FIELD_COLOR_RED_MIN_DOMINANCE)
+    )
+    return int(blue_pixels), int(red_pixels)
+
+
+def level_bar_side(pixel_counts: tuple[int, int] | None) -> str:
+    """Blue majority is ally, red majority is enemy; ties/no evidence unknown."""
+    blue, red = pixel_counts if pixel_counts is not None else (0, 0)
+    return "ally" if blue > red else "enemy" if red > blue else "unknown"
+
+
 def track_color(
     track_id: int | None,
-    mean_color_bgr: tuple[float, float, float] | None,
+    pixel_counts: tuple[int, int] | None,
 ) -> tuple[int, int, int]:
-    """Compare weighted mean channels; vary the chosen shade by track ID."""
-    if mean_color_bgr is None:
-        return 190, 190, 190
-    blue, _, red = mean_color_bgr
-    red_score = red * FIELD_COLOR_RED_WEIGHT
-    blue_score = blue * FIELD_COLOR_BLUE_WEIGHT
+    """Use the same pixel-count decision as exported side; vary shade by ID."""
+    side = level_bar_side(pixel_counts)
     intensity = 180 + (int(track_id) * 47 % 76) if track_id is not None else 255
-    if red_score > blue_score:
+    if side == "enemy":
         return 40, 40, intensity
-    if blue_score > red_score:
+    if side == "ally":
         return intensity, 40, 40
     return 190, 190, 190
 
@@ -619,7 +645,7 @@ def draw_objects_on_field(
     background: np.ndarray,
     objects: list[tuple[str, int | None, float, float]],
     battlefield_shape: tuple[int, ...],
-    mean_colors: dict[int, tuple[float, float, float] | None],
+    pixel_counts: dict[int, tuple[int, int]],
 ) -> np.ndarray:
     """Highlight field cells containing tracked unit centers."""
     canvas = background.copy()
@@ -641,7 +667,7 @@ def draw_objects_on_field(
             and 0 <= row_index < FIELD_ROWS
         ):
             continue
-        color = track_color(track_id, mean_colors.get(track_id))
+        color = track_color(track_id, pixel_counts.get(track_id))
         cell_x1 = column_index * FIELD_CELL_SIZE
         cell_y1 = row_index * FIELD_CELL_SIZE
         cell_x2 = cell_x1 + FIELD_CELL_SIZE - 1
@@ -1303,6 +1329,8 @@ class UnitTrackMemory:
     confidence: float
     mean_color_bgr: tuple[float, float, float] | None
     classification_text: str
+    # Preserve the last measured level-bar evidence during Kalman-only gaps.
+    level_bar_pixel_counts: tuple[int, int] = (0, 0)
 
 
 @dataclass(frozen=True)
@@ -1859,8 +1887,8 @@ def run_video_prediction(
                 "num_objects": 0, "objects": [], "events": [],
             }
             frame_data["tower_hp"] = {tower_id: dict(state) for tower_id, state in tower_hp.items()}
-            # Current-frame track_id -> mean (B, G, R), or None for an empty crop.
-            bar_mean_colors: dict[int, tuple[float, float, float] | None] = {}
+            # Current-frame track_id -> (blue pixel count, red pixel count).
+            bar_pixel_counts: dict[int, tuple[int, int]] = {}
             field_objects: list[tuple[str, int | None, float, float]] = []
             elixir_centers: list[tuple[float, float]] = []
             bar_detection_count = 0
@@ -1893,13 +1921,15 @@ def run_video_prediction(
                     roi_right = max(0, min(battlefield.shape[1], math.ceil(x2)))
                     roi_bottom = max(0, min(battlefield.shape[0], math.ceil(y2)))
                     mean_color_bgr = None
+                    color_counts = (0, 0)
                     if roi_right > roi_left and roi_bottom > roi_top:
                         color_roi = frame[
                             crop_y1 + roi_top : crop_y1 + roi_bottom,
                             crop_x1 + roi_left : crop_x1 + roi_right,
                         ]
                         mean_color_bgr = cv2.mean(color_roi)[:3]
-                    bar_mean_colors[track_id] = mean_color_bgr
+                        color_counts = count_level_bar_pixels(color_roi)
+                    bar_pixel_counts[track_id] = color_counts
 
                     # Ищем совпадающие бары и левелы
                     is_unit_detection = (
@@ -1994,6 +2024,7 @@ def run_video_prediction(
                             confidence=float(conf),
                             mean_color_bgr=mean_color_bgr,
                             classification_text=cls_text,
+                            level_bar_pixel_counts=color_counts,
                         )
                     else:
                         cls_text = "None"
@@ -2026,6 +2057,7 @@ def run_video_prediction(
                         "confidence": conf,
                         "predicted": False,
                         "mean_color_bgr": mean_color_bgr,
+                        "level_bar_pixel_counts": color_counts,
                         "bbox": [x1, y1, x2, y2],
                         "center": [center_x, center_y],
                     }
@@ -2072,7 +2104,7 @@ def run_video_prediction(
                 unit_center_x = (x1 + extended_right) / 2
                 unit_center_y = y2 + SIZE_OF_RECT / 2
 
-                bar_mean_colors[track_id] = predicted_track.memory.mean_color_bgr
+                bar_pixel_counts[track_id] = predicted_track.memory.level_bar_pixel_counts
                 field_objects.append(
                     ("blue_rect", track_id, unit_center_x, unit_center_y)
                 )
@@ -2119,6 +2151,7 @@ def run_video_prediction(
                             predicted_track.missed_processed_frames
                         ),
                         "mean_color_bgr": predicted_track.memory.mean_color_bgr,
+                        "level_bar_pixel_counts": predicted_track.memory.level_bar_pixel_counts,
                         "bbox": [x1, y1, x2, y2],
                         "center": [predicted_center_x, predicted_center_y],
                     }
@@ -2202,13 +2235,7 @@ def run_video_prediction(
                 if cell is None:
                     continue
                 cache = unit_classification_cache.get(track_id)
-                color = bar_mean_colors.get(track_id)
-                side = "unknown"
-                if color is not None:
-                    blue_score = color[0] * FIELD_COLOR_BLUE_WEIGHT
-                    red_score = color[2] * FIELD_COLOR_RED_WEIGHT
-                    if blue_score != red_score:
-                        side = "ally" if blue_score > red_score else "enemy"
+                side = level_bar_side(bar_pixel_counts.get(track_id))
                 obj = unit_boxes.get(track_id, {})
                 frame_data["units"].append({
                     "track_id": int(track_id), "unit": cache.class_name if cache else "unknown",
@@ -2314,7 +2341,7 @@ def run_video_prediction(
                     field_background,
                     field_objects,
                     battlefield.shape,
-                    bar_mean_colors,
+                    bar_pixel_counts,
                 )
                 cv2.imshow("Tracking", resized_frame)
                 draw_card_event_markers(field_frame, card_event_markers, frame_count)

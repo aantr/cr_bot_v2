@@ -451,6 +451,12 @@ class TrajectoryDataset(Dataset):
     def __len__(self) -> int:
         return self._cumulative[-1]
 
+    def iter_window_endpoints(self):
+        """Yield (sample index, battle index, final transition) without encoding."""
+        for battle, ends in enumerate(self._ends):
+            for offset, end in enumerate(ends):
+                yield self._cumulative[battle] + offset, battle, end
+
     def encoding_config(self) -> dict:
         """Store this in a checkpoint for identical feature/ID mapping at inference."""
         return {

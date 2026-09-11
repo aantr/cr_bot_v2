@@ -29,10 +29,12 @@ if not __package__:
     from offline_rl.dataset import (Normalization, TrajectoryDataset, Vocabulary,
                                     create_train_val_datasets, discover_trajectory_files)
     from offline_rl.starformer import StARformer, StARformerConfig
+    from offline_rl.balanced_sampling import BalancedActionBatchSampler
 else:
     from .dataset import (Normalization, TrajectoryDataset, Vocabulary,
                           create_train_val_datasets, discover_trajectory_files)
     from .starformer import StARformer, StARformerConfig
+    from .balanced_sampling import BalancedActionBatchSampler
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,7 @@ class TrainConfig:
     max_units: int = 128
     stride: int = 1
     supervise: str = "last"
+    sampling: str = "natural"
     d_model: int = 128
     n_heads: int = 4
     local_layers: int = 1
@@ -75,6 +78,10 @@ class TrainConfig:
             raise ValueError("validation_fraction must be in [0,1)")
         if self.supervise not in {"last", "all"}:
             raise ValueError("supervise must be last or all")
+        if self.sampling not in {"natural", "balanced"}:
+            raise ValueError("sampling must be natural or balanced")
+        if self.sampling == "balanced" and (self.batch_size < 2 or self.batch_size % 2 or self.supervise != "last"):
+            raise ValueError("Balanced sampling requires even batch_size >=2 and supervise=last")
         StARformerConfig(num_cards=3, num_units=2, **self.model_options())
 
     def model_options(self):
@@ -191,6 +198,12 @@ class EpochMetrics:
                 "full_action_accuracy": ratio("correct_full", "complete_actions"),
                 "play_precision": ratio("true_positive_plays", "predicted_plays"),
                 "play_recall": ratio("true_positive_plays", "plays"),
+                "predicted_plays": c["predicted_plays"],
+                "true_positive_plays": c["true_positive_plays"],
+                "false_positive_plays": c["predicted_plays"] - c["true_positive_plays"],
+                "missed_plays": c["plays"] - c["true_positive_plays"],
+                "play_f1": (2 * c["true_positive_plays"] / (c["plays"] + c["predicted_plays"])
+                            if c["plays"] + c["predicted_plays"] else None),
                 "play_slot_accuracy": ratio("correct_slot", "plays"),
                 "play_card_accuracy": ratio("correct_card", "plays"),
                 "play_cell_accuracy": ratio("correct_cell", "positions"),
@@ -226,6 +239,18 @@ def run_epoch(model, loader, device, config, *, optimizer=None, log_every=50):
         raise ValueError(f"{'Training' if training else 'Validation'} split has no supervised actions; "
                          "check recognition labels, stride and the split")
     return result
+
+
+def play_checkpoint_score(metrics):
+    """F1 at fixed raw argmax (P(play)>0.5), then lower loss as tie-breaker.
+
+    Require both classes so all-play/no-play validation cannot pick a policy.
+    Evaluated on natural, unique windows, NOT the balanced optimization stream.
+    F1 concerns exact labeled decision times, not card/cell correctness or wins.
+    """
+    if not metrics["plays"] or metrics["plays"] == metrics["actions"]:
+        return None
+    return (metrics["play_f1"], -metrics["loss"])
 
 
 def file_manifest(dataset):
@@ -302,7 +327,8 @@ def train(args) -> Path:
             raise ValueError("Unsupported training checkpoint version")
         if checkpoint.get("policy_kind") != "imitation":
             raise ValueError("train.py resumes imitation only; use train_iql.py for IQL checkpoints")
-        saved = checkpoint["train_config"]
+        # Old imitation runs predate sampling; their original mode is natural.
+        saved = {**asdict(TrainConfig()), **checkpoint["train_config"]}
         for key, value in requested.items():
             if saved[key] != value:
                 raise ValueError(f"Cannot change {key} on resume; checkpoint uses {saved[key]}")
@@ -356,8 +382,11 @@ def train(args) -> Path:
     model = StARformer(model_config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     generator = torch.Generator().manual_seed(config.seed)
+    balanced_sampler = (BalancedActionBatchSampler(train_data, config.batch_size, generator=generator)
+                        if config.sampling == "balanced" else None)
     start_epoch, best_loss, best_epoch, stale_epochs, history = 1, float("inf"), 0, 0, []
     stopping_loss = float("inf")
+    best_play_score, best_play_epoch = None, 0
     if checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -365,6 +394,11 @@ def train(args) -> Path:
         best_loss, best_epoch = checkpoint["best_loss"], checkpoint["best_epoch"]
         stopping_loss = checkpoint["stopping_loss"]
         stale_epochs, history = checkpoint["stale_epochs"], checkpoint["history"]
+        if checkpoint.get("best_play_score") is not None:
+            if not (output / "best_play.pt").is_file():
+                raise ValueError("Resume needs the saved best_play.pt beside last.pt")
+            best_play_score = tuple(checkpoint["best_play_score"])
+            best_play_epoch = checkpoint["best_play_epoch"]
         random.setstate(checkpoint["rng_state"]["python"])
         torch.set_rng_state(checkpoint["rng_state"]["torch"])
         generator.set_state(checkpoint["rng_state"]["loader"])
@@ -372,14 +406,29 @@ def train(args) -> Path:
         if device.type == "cuda" and len(cuda_rng) == torch.cuda.device_count():
             torch.cuda.set_rng_state_all(cuda_rng)
     loader_options = dict(batch_size=config.batch_size, num_workers=args.num_workers, pin_memory=device.type == "cuda")
-    train_loader = DataLoader(train_data, shuffle=True, generator=generator, **loader_options)
+    if balanced_sampler is None:
+        train_loader = DataLoader(train_data, shuffle=True, generator=generator, **loader_options)
+    else:
+        train_loader = DataLoader(train_data, batch_sampler=balanced_sampler, generator=generator,
+                                  num_workers=args.num_workers, pin_memory=device.type == "cuda")
     val_loader = (DataLoader(val_data, shuffle=False, generator=torch.Generator().manual_seed(config.seed + 1),
                              **loader_options) if val_data is not None else None)
+    # For single-battle diagnostics, measure the final epoch weights in eval
+    # mode on the ORIGINAL frequency, without oversampling or dropout noise.
+    train_eval_loader = (DataLoader(train_data, shuffle=False,
+                                   generator=torch.Generator().manual_seed(config.seed + 2), **loader_options)
+                         if val_loader is None else None)
     manifest = {"train": file_manifest(train_data), "validation": file_manifest(val_data)}
     print(f"Device: {device}; train: {len(train_data.files)} battles / {len(train_data)} windows; "
           f"validation: {len(val_data.files) if val_data else 0} battles; output: {output}", flush=True)
     if val_loader is None:
-        print("WARNING: no validation. best.pt uses training loss; this does not measure generalization.", flush=True)
+        selection = "natural train_eval loss" if balanced_sampler is not None else "training loss"
+        print(f"WARNING: no validation. best.pt uses {selection}; this does not measure generalization.", flush=True)
+        print("best_play.pt uses natural train_eval F1; it measures memorization, NOT generalization.", flush=True)
+    if balanced_sampler is not None:
+        print(f"Balanced sampling: {balanced_sampler.stats}; exactly 50% play per batch.", flush=True)
+        if config.play_weight != 1:
+            print("WARNING: balanced sampling already oversamples play; start with --play-weight 1.", flush=True)
     if args.epochs < start_epoch:
         print(f"Already completed {start_epoch - 1} epochs; nothing to do.", flush=True)
         return output
@@ -391,7 +440,17 @@ def train(args) -> Path:
         training = run_epoch(model, train_loader, device, config, optimizer=optimizer, log_every=args.log_every)
         validation = (run_epoch(model, val_loader, device, config, log_every=args.log_every)
                       if val_loader is not None else None)
-        monitored = validation if validation is not None else training
+        train_evaluation = (run_epoch(model, train_eval_loader, device, config, log_every=0)
+                            if train_eval_loader is not None else None)
+        # Preserve the old natural best.pt/early-stop contract; balanced runs
+        # must never select best.pt using oversampled optimization metrics.
+        monitored = (validation if validation is not None else
+                     train_evaluation if balanced_sampler is not None else training)
+        play_metrics = validation if validation is not None else train_evaluation
+        play_score = play_checkpoint_score(play_metrics)
+        play_improved = play_score is not None and (best_play_score is None or play_score > best_play_score)
+        if play_improved:
+            best_play_score, best_play_epoch = play_score, epoch
         improved = monitored["loss"] < best_loss
         if improved:
             best_loss, best_epoch = monitored["loss"], epoch
@@ -400,7 +459,7 @@ def train(args) -> Path:
         else:
             stale_epochs += 1
         record = {"epoch": epoch, "seconds": time.monotonic() - begin,
-                  "train": training, "validation": validation}
+                  "train": training, "validation": validation, "train_eval": train_evaluation}
         history.append(record)
         state = {"checkpoint_version": 1, "policy_kind": "imitation", "epoch": epoch,
                  "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(),
@@ -408,13 +467,20 @@ def train(args) -> Path:
                  "train_config": asdict(config), "data_manifest": manifest,
                  "best_loss": best_loss, "best_epoch": best_epoch, "stale_epochs": stale_epochs,
                  "stopping_loss": stopping_loss,
-                 "monitor": "validation_loss" if val_loader is not None else "train_loss",
+                 "monitor": "validation_loss" if val_loader is not None else
+                            "train_eval_loss" if balanced_sampler is not None else "train_loss",
+                 "best_play_score": best_play_score, "best_play_epoch": best_play_epoch,
+                 "play_monitor": "validation_play_f1" if val_loader is not None else "train_eval_play_f1",
+                 "play_evaluation_threshold": 0.5,
+                 "sampling_stats": balanced_sampler.stats if balanced_sampler is not None else None,
                  "history": history, "rng_state": {
                      "python": random.getstate(), "torch": torch.get_rng_state(),
                      "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
                      "loader": generator.get_state()}}
         if improved:
             atomic_save(output / "best.pt", state)
+        if play_improved:
+            atomic_save(output / "best_play.pt", state)
         atomic_save(output / "last.pt", state)
         atomic_save(output / "history.json", history, json_format=True)
         val_text = f" val_loss={validation['loss']:.4f}" if validation is not None else ""
@@ -422,6 +488,13 @@ def train(args) -> Path:
               f"full_acc={monitored['full_action_accuracy']} "
               f"plays={monitored['plays']} play_full_acc={monitored['play_full_accuracy']} "
               f"best_epoch={best_epoch} ({record['seconds']:.1f}s)", flush=True)
+        print(f"  {'val' if validation is not None else 'train_eval'}: "
+              f"play_f1={play_metrics['play_f1']} precision={play_metrics['play_precision']} "
+              f"recall={play_metrics['play_recall']} "
+              f"missed={play_metrics['missed_plays']} false_plays={play_metrics['false_positive_plays']} "
+              f"best_play_epoch={best_play_epoch}", flush=True)
+        if epoch == start_epoch and play_score is None:
+            print("WARNING: best_play.pt needs both play and noop labels in the evaluation split.", flush=True)
         if epoch == start_epoch and not training["plays"]:
             print("WARNING: training has no supervised plays; card and coordinate heads cannot learn.", flush=True)
         if epoch == start_epoch and validation is not None and not validation["plays"]:

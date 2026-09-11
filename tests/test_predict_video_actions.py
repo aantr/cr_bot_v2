@@ -28,6 +28,7 @@ class FakePredictor:
         return {"type": "play", "card": "knight", "slot": 1, "row": 16, "column": 9,
                 "observation_timestamp_ms": self.history[-1][0]["timestamp_ms"],
                 "history_length": min(3, len(self.history)),
+                "play_probability": .8, "play_threshold": .5, "reason": "model_play",
                 "constraints": {"elixir_checked": False, "placement_mask_supplied": False},
                 "confidence": {"action_type": .8}}
 
@@ -94,6 +95,18 @@ class VideoActionTests(unittest.TestCase):
         self.assertEqual(frame_data, before)
         self.assertTrue(canvas[450:481, 240:271].any())
         self.assertTrue(canvas[84:200].any())
+
+    def test_overlay_shows_raw_play_probability_and_block_reason_for_wait(self):
+        import cv2
+        self.feed(observation(0))
+        self.advisor.latest.update(type="noop", play_probability=.8, play_threshold=.35,
+                                   reason="no_allowed_play")
+        canvas = np.zeros((960, 540, 3), dtype=np.uint8)
+        with patch("cv2.putText", wraps=cv2.putText) as draw:
+            self.advisor.annotate(canvas, observation(0))
+        labels = [call.args[1] for call in draw.call_args_list]
+        self.assertTrue(any("P(play) 0.800" in label and "threshold 0.350" in label for label in labels))
+        self.assertTrue(any("PLAY blocked" in label for label in labels))
 
 
 if __name__ == "__main__":

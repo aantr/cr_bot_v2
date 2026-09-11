@@ -174,6 +174,61 @@ class PredictActionTests(unittest.TestCase):
         self.assertEqual(actual["column"], expected["column"].item() + 1)
         self.assertFalse(actual["constraints"]["elixir_checked"])
 
+    def test_play_threshold_changes_decision_but_not_raw_probability(self):
+        results = []
+        for threshold in (.5, .3):
+            predictor = self.make_predictor(play_threshold=threshold)
+            self.observed(0, predictor)
+            with torch.no_grad():
+                predictor.model.action_head.weight.zero_()
+                predictor.model.action_head.bias.copy_(torch.tensor([.6, .4]).log())
+            results.append(predictor.predict())
+        self.assertEqual([r["type"] for r in results], ["noop", "play"])
+        for result, threshold in zip(results, (.5, .3)):
+            self.assertAlmostEqual(result["play_probability"], .4, places=6)
+            self.assertEqual(result["play_threshold"], threshold)
+        self.assertAlmostEqual(results[0]["confidence"]["action_type"], .6, places=6)
+        self.assertAlmostEqual(results[1]["confidence"]["action_type"], .4, places=6)
+
+    def test_threshold_preserves_default_tie_and_validates_bounds(self):
+        self.observed(0)
+        with torch.no_grad():
+            self.predictor.model.action_head.weight.zero_()
+            self.predictor.model.action_head.bias.zero_()
+        self.assertEqual(self.predictor.predict()["type"], "noop")
+        self.assertEqual(self.predictor.predict()["play_probability"], .5)
+        for threshold in (-.1, 1.1, float("nan"), float("inf"), True, "0.3"):
+            with self.assertRaisesRegex(ValueError, "play_threshold"):
+                self.make_predictor(play_threshold=threshold)
+        for threshold in (0., 1.):
+            predictor = self.make_predictor(play_threshold=threshold)
+            self.observed(0, predictor)
+            self.force_play(predictor)
+            self.assertEqual(predictor.predict()["type"], "play" if threshold == 0 else "noop")
+
+    def test_low_threshold_never_bypasses_constraints(self):
+        predictor = self.make_predictor(play_threshold=0.)
+        self.observed(0, predictor)
+        self.force_play(predictor)
+        for options in ({"allowed_slots": [False] * 4},
+                        {"allowed_cells": torch.zeros(32, 18, dtype=torch.bool)},
+                        {"slot_costs": [9] * 4}):
+            result = predictor.predict(**options)
+            self.assertEqual(result["type"], "noop")
+            self.assertEqual(result["reason"], "no_allowed_play")
+            self.assertGreater(result["play_probability"], .99)
+        for name in ("empty", "unknown", "not_in_vocabulary"):
+            predictor.reset()
+            state = deepcopy(self.trajectory["observations"][0])
+            for card in state["hand"]:
+                card["card"] = name
+            predictor.observe(state)
+            self.assertEqual(predictor.predict()["reason"], "no_allowed_play")
+        predictor = self.make_predictor(play_threshold=0., min_card_confidence=1.)
+        self.observed(0, predictor)
+        self.force_play(predictor)
+        self.assertEqual(predictor.predict()["reason"], "no_allowed_play")
+
     def test_invalid_checkpoint_and_observation_overflow(self):
         bad = deepcopy(self.saved)
         bad["model_config"]["sequence_length"] = 9
@@ -193,11 +248,12 @@ class PredictActionTests(unittest.TestCase):
     def test_cli_replay_and_stream_reset(self):
         command = [sys.executable, str(V2_DIR / "offline_rl" / "predict_action.py"),
                    str(self.checkpoint), "--device", "cpu"]
-        result = subprocess.run(command + ["--replay", str(self.path), "--limit", "2"],
+        result = subprocess.run(command + ["--replay", str(self.path), "--limit", "2", "--play-threshold", "0.35"],
                                 capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stderr)
         rows = [json.loads(line) for line in result.stdout.splitlines()]
         self.assertEqual([row["history_length"] for row in rows], [1, 2])
+        self.assertTrue(all(row["play_threshold"] == .35 and 0 <= row["play_probability"] <= 1 for row in rows))
         requests = [{"observation": self.trajectory["observations"][0]},
                     {"reset": True, "battle_id": "new"},
                     {"observation": self.trajectory["observations"][0]}]

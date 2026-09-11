@@ -76,7 +76,8 @@ class ActionPredictor:
     """
 
     def __init__(self, checkpoint, *, device="auto", field_layout=None,
-                 card_costs=None, min_card_confidence=0.0):
+                 card_costs=None, min_card_confidence=0.0, play_threshold=0.5):
+        self.play_threshold = _number(play_threshold, "play_threshold", 0, 1)
         device_name = str(device)
         
         if device_name == "auto":
@@ -219,6 +220,8 @@ class ActionPredictor:
         table is configured, missing cost/elixir blocks play conservatively.
         Without costs, affordability is NOT checked and the result says so.
         Confidence values are softmax scores, not calibrated success estimates.
+        Play requires raw P(play) > play_threshold AND an allowed hand slot.
+        The default 0.5 preserves argmax behavior, including wait on exact ties.
         """
         batch = _to_device(self.build_batch(), self.device)
         state = self._history[-1]["observation"]
@@ -260,11 +263,13 @@ class ActionPredictor:
         if any(not torch.isfinite(value[0, t]).all() for value in outputs.values()):
             raise ValueError("Model produced nonfinite logits")
         type_prob = outputs["action_type"][0, t].softmax(-1)
-        play = type_prob.argmax().item() == 1 and bool(slots.any())
+        play_probability = float(type_prob[1])
+        play = play_probability > self.play_threshold and bool(slots.any())
         result = {"type": "play" if play else "noop", "slot": None, "card": None,
                   "row": None, "column": None, "index_base": 1,
                   "observation_timestamp_ms": state["timestamp_ms"], "battle_id": self.battle_id,
                   "history_length": self.history_length,
+                  "play_probability": play_probability, "play_threshold": self.play_threshold,
                   "reason": "model_play" if play else "model_noop" if slots.any() else "no_allowed_play",
                   "constraints": {"elixir_checked": cost_check, "placement_mask_supplied": allowed_cells is not None},
                   "confidence": {"action_type": float(type_prob[int(play)]), "slot": None,
@@ -293,6 +298,8 @@ def main(argv=None):
     parser.add_argument("--card-costs", type=Path, help="JSON object mapping card names to elixir costs")
     parser.add_argument("--field-layout", type=Path, help="JSON list of 32 field strings; default field.py or replay layout")
     parser.add_argument("--min-card-confidence", type=float, default=0.0)
+    parser.add_argument("--play-threshold", type=float, default=0.5,
+                        help="Play if raw P(play) > this threshold in [0,1]; legality checks still apply (default 0.5)")
     parser.add_argument("--limit", type=int, help="Maximum predictions for a quick check")
     args = parser.parse_args(argv)
     try:
@@ -303,7 +310,8 @@ def main(argv=None):
                    replay["metadata"]["field_layout"] if replay else None)
         costs = json.loads(args.card_costs.read_text(encoding="utf-8-sig")) if args.card_costs else None
         predictor = ActionPredictor(args.checkpoint, device=args.device, field_layout=terrain,
-                                    card_costs=costs, min_card_confidence=args.min_card_confidence)
+                                    card_costs=costs, min_card_confidence=args.min_card_confidence,
+                                    play_threshold=args.play_threshold)
         with ExitStack() as stack:
             output = stack.enter_context(args.output.open("x", encoding="utf-8")) if args.output else sys.stdout
             def emit(value):

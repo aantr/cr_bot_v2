@@ -179,8 +179,12 @@ class EpochMetrics:
         slots = outputs["card_slot"][position].argmax(-1)
         indices = torch.arange(count, device=slots.device)
         slot_ok = slots == target["card_slot"][position]
-        row = outputs["row_by_slot"][position][indices, slots].argmax(-1)
-        column = outputs["column_by_slot"][position][indices, slots].argmax(-1)
+        if "position" in outputs:
+            cell = outputs["position"][position].argmax(-1)
+            row, column = cell // 18, cell % 18
+        else:
+            row = outputs["row_by_slot"][position][indices, slots].argmax(-1)
+            column = outputs["column_by_slot"][position][indices, slots].argmax(-1)
         cell_ok = (row == target["row"][position]) & (column == target["column"][position])
         full = slot_ok & cell_ok & (outputs["action_type"][position].argmax(-1) == 1)
         for key, value in (("correct_cell", cell_ok), ("correct_play", full), ("correct_full", full)):
@@ -210,7 +214,8 @@ class EpochMetrics:
                 "play_full_accuracy": ratio("correct_play", "positions")}
 
 
-def run_epoch(model, loader, device, config, *, optimizer=None, log_every=50):
+def run_epoch(model, loader, device, config, *, optimizer=None, log_every=50,
+              loss_function=loss_components):
     training = optimizer is not None
     model.train(training)
     metrics = EpochMetrics()
@@ -221,7 +226,7 @@ def run_epoch(model, loader, device, config, *, optimizer=None, log_every=50):
         batch = to_device(batch, device)
         with torch.set_grad_enabled(training):
             outputs = model(batch)
-            components = loss_components(outputs, batch, config.play_weight)
+            components = loss_function(outputs, batch, config.play_weight)
             loss = sum(value / count for value, count in components.values())
             if not torch.isfinite(loss):
                 raise ValueError(f"Nonfinite loss at batch {index}; no checkpoint written for this epoch")
@@ -295,8 +300,8 @@ def atomic_save(path, value, *, json_format=False):
             os.unlink(temporary)
 
 
-def make_parser():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def make_parser(config_class=TrainConfig, description=__doc__):
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("source", nargs="?", type=Path, help="Trajectory JSON or directory; default offline_rl/trajectories")
     parser.add_argument("--output", type=Path, help="New empty run directory; defaults to v2/runs/offline_rl/<timestamp>")
     parser.add_argument("--resume", type=Path, help="Resume last.pt with its saved configuration and split")
@@ -305,20 +310,23 @@ def make_parser():
     parser.add_argument("--num-workers", type=int, default=0, help="DataLoader workers; Windows-safe default 0")
     parser.add_argument("--num-threads", type=int, help="Optional CPU thread limit")
     parser.add_argument("--log-every", type=int, default=50, help="Batch logging interval; 0 disables")
-    for field in fields(TrainConfig):
+    for field in fields(config_class):
         parser.add_argument("--" + field.name.replace("_", "-"), type=type(field.default), default=None,
                             help=f"New-run default: {field.default}; restored on resume")
     return parser
 
 
-def train(args) -> Path:
+def train(args, *, config_class=TrainConfig, model_class=StARformer,
+          model_config_class=StARformerConfig, epoch_runner=run_epoch,
+          checkpoint_metadata=None) -> Path:
+    checkpoint_metadata = dict(checkpoint_metadata or {})
     if args.epochs < 1 or args.num_workers < 0 or args.log_every < 0:
         raise ValueError("epochs must be positive; num-workers and log-every must be nonnegative")
     if args.num_threads is not None:
         if args.num_threads < 1:
             raise ValueError("num-threads must be positive")
         torch.set_num_threads(args.num_threads)
-    requested = {field.name: getattr(args, field.name) for field in fields(TrainConfig)
+    requested = {field.name: getattr(args, field.name) for field in fields(config_class)
                  if getattr(args, field.name) is not None}
     checkpoint = None
     if args.resume:
@@ -327,14 +335,16 @@ def train(args) -> Path:
             raise ValueError("Unsupported training checkpoint version")
         if checkpoint.get("policy_kind") != "imitation":
             raise ValueError("train.py resumes imitation only; use train_iql.py for IQL checkpoints")
+        if checkpoint.get("architecture", "starformer") != checkpoint_metadata.get("architecture", "starformer"):
+            raise ValueError("Checkpoint architecture differs from this trainer; use the matching training script")
         # Old imitation runs predate sampling; their original mode is natural.
-        saved = {**asdict(TrainConfig()), **checkpoint["train_config"]}
+        saved = {**asdict(config_class()), **checkpoint["train_config"]}
         for key, value in requested.items():
             if saved[key] != value:
                 raise ValueError(f"Cannot change {key} on resume; checkpoint uses {saved[key]}")
-        config = TrainConfig(**saved)
+        config = config_class(**saved)
     else:
-        config = TrainConfig(**requested)
+        config = config_class(**requested)
     device_name = args.device
     if device_name == "auto":
         device_name = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -354,7 +364,7 @@ def train(args) -> Path:
     torch.backends.cudnn.deterministic = True
     if checkpoint:
         train_data, val_data = restore_datasets(checkpoint, args.source)
-        model_config = StARformerConfig(**checkpoint["model_config"])
+        model_config = model_config_class(**checkpoint["model_config"])
     else:
         source = args.source or Path(__file__).resolve().parent / "trajectories"
         train_data, val_data = create_train_val_datasets(
@@ -362,7 +372,7 @@ def train(args) -> Path:
             sequence_length=config.sequence_length, max_units=config.max_units,
             stride=config.stride, supervise=config.supervise,
         )
-        model_config = StARformerConfig.from_encoding_config(train_data.encoding_config(), **config.model_options())
+        model_config = model_config_class.from_encoding_config(train_data.encoding_config(), **config.model_options())
     output = (args.output.resolve() if args.output else
               args.resume.resolve().parent if args.resume else
               Path(__file__).resolve().parents[1] / "runs" / "offline_rl" / datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
@@ -379,7 +389,7 @@ def train(args) -> Path:
     elif output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise ValueError(f"Output is not empty: {output}; choose a new directory or --resume")
     output.mkdir(parents=True, exist_ok=True)
-    model = StARformer(model_config).to(device)
+    model = model_class(model_config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
     generator = torch.Generator().manual_seed(config.seed)
     balanced_sampler = (BalancedActionBatchSampler(train_data, config.batch_size, generator=generator)
@@ -437,10 +447,10 @@ def train(args) -> Path:
         return output
     for epoch in range(start_epoch, args.epochs + 1):
         begin = time.monotonic()
-        training = run_epoch(model, train_loader, device, config, optimizer=optimizer, log_every=args.log_every)
-        validation = (run_epoch(model, val_loader, device, config, log_every=args.log_every)
+        training = epoch_runner(model, train_loader, device, config, optimizer=optimizer, log_every=args.log_every)
+        validation = (epoch_runner(model, val_loader, device, config, log_every=args.log_every)
                       if val_loader is not None else None)
-        train_evaluation = (run_epoch(model, train_eval_loader, device, config, log_every=0)
+        train_evaluation = (epoch_runner(model, train_eval_loader, device, config, log_every=0)
                             if train_eval_loader is not None else None)
         # Preserve the old natural best.pt/early-stop contract; balanced runs
         # must never select best.pt using oversampled optimization metrics.
@@ -461,7 +471,7 @@ def train(args) -> Path:
         record = {"epoch": epoch, "seconds": time.monotonic() - begin,
                   "train": training, "validation": validation, "train_eval": train_evaluation}
         history.append(record)
-        state = {"checkpoint_version": 1, "policy_kind": "imitation", "epoch": epoch,
+        state = {**checkpoint_metadata, "checkpoint_version": 1, "policy_kind": "imitation", "epoch": epoch,
                  "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(),
                  "model_config": model_config.to_dict(), "encoding_config": train_data.encoding_config(),
                  "train_config": asdict(config), "data_manifest": manifest,

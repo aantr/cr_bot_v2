@@ -160,10 +160,10 @@ class _PreviewFinished(Exception):
     pass
 
 
-def main(argv=None):
+def main(argv=None, *, predictor_class=ActionPredictor, default_checkpoint=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("video", nargs="?", type=Path, default=V2_DIR / "screenshots/input_omydays_cutted.mp4")
-    parser.add_argument("--checkpoint", type=Path, default=V2_DIR / "runs/offline_rl/first/best.pt")
+    parser.add_argument("--checkpoint", type=Path, default=default_checkpoint or V2_DIR / "runs/offline_rl/first/best.pt")
     parser.add_argument("--device", default="auto", help="Policy device only; detector device remains in predict_video_kalman.py")
     parser.add_argument("--state-fps", type=float, default=5.0)
     parser.add_argument("--detection-fps", type=float, default=30.0)
@@ -200,7 +200,7 @@ def main(argv=None):
         config.validate()
         costs = json.loads(args.card_costs.read_text(encoding="utf-8-sig")) if args.card_costs else None
         cells = json.loads(args.allowed_cells.read_text(encoding="utf-8-sig")) if args.allowed_cells else None
-        predictor = ActionPredictor(args.checkpoint, device=args.device, card_costs=costs,
+        predictor = predictor_class(args.checkpoint, device=args.device, card_costs=costs,
                                     min_card_confidence=args.min_card_confidence,
                                     play_threshold=args.play_threshold)
         print(f"Policy: {predictor.policy_kind}; history: {predictor.history_mode}; "

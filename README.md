@@ -1,3 +1,15 @@
+## Object Transformer + GRU policy
+
+An alternative behavior-cloning policy now lives in `offline_rl/object_gru/`:
+per-frame object Transformer (3 layers / 4 heads) + 8-state GRU (2 layers,
+hidden 256) + WAIT/PLAY, four card slots and 576 deployment cells. It consumes
+the **same trajectory JSONs**, without re-extraction or fabricated missing data.
+StARformer and IQL remain available through their existing entry points.
+
+See [architecture, feature adaptation and full PowerShell commands](offline_rl/object_gru/README.md).
+Train with `offline_rl/object_gru/train.py`; preview video with
+`predict_video_object_gru.py`. These entry points use their own checkpoints.
+
 ## Unit team from level-bar color
 
 `predict_video_kalman.py` counts tinted pixels in the clean detected level-bar

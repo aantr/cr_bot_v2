@@ -106,7 +106,8 @@ class ActionPredictor:
         self.encoding_config = deepcopy(encoding)
         self.vocabulary = Vocabulary.from_dict(encoding["vocabulary"])
         self.normalization = Normalization(**encoding["normalization"])
-        config = StARformerConfig(**saved["model_config"])
+        model = self.load_model(saved)
+        config = model.config
         if (config.num_cards != len(self.vocabulary.cards) or config.num_units != len(self.vocabulary.units)
                 or config.sequence_length != encoding["sequence_length"]):
             raise ValueError("Model and feature encoding configuration disagree")
@@ -114,7 +115,7 @@ class ActionPredictor:
             raise ValueError("Invalid checkpoint max_units")
         self.encoder = ObservationEncoder(self.vocabulary, self.normalization,
                                           config.sequence_length, encoding["max_units"])
-        self.model = StARformer(config).to(self.device)
+        self.model = model.to(self.device)
         self.model.load_state_dict(saved["model_state_dict"], strict=True)
         self.model.eval()
         self.field_layout = list(default_field_layout() if field_layout is None else field_layout)
@@ -130,6 +131,17 @@ class ActionPredictor:
                                for name, cost in card_costs.items()}
         self._history = deque(maxlen=config.sequence_length)
         self.reset()
+
+    @staticmethod
+    def load_model(saved):
+        """Architecture hook; legacy checkpoints remain StARformer by default."""
+        if saved.get("architecture", "starformer") != "starformer":
+            raise ValueError("Use offline_rl/object_gru/predict_action.py or predict_video_object_gru.py for this architecture")
+        return StARformer(StARformerConfig(**saved["model_config"]))
+
+    def position_logits(self, outputs, timestep, slot):
+        return (outputs["row_by_slot"][0, timestep, slot, :, None]
+                + outputs["column_by_slot"][0, timestep, slot, None, :])
 
     def reset(self, battle_id="live"):
         self._history.clear()
@@ -278,7 +290,7 @@ class ActionPredictor:
             return result
         slot_prob = outputs["card_slot"][0, t].masked_fill(~slots, -torch.inf).softmax(-1)
         slot = slot_prob.argmax().item()
-        joint = outputs["row_by_slot"][0, t, slot, :, None] + outputs["column_by_slot"][0, t, slot, None, :]
+        joint = self.position_logits(outputs, t, slot)
         cell_prob = joint.masked_fill(~cells[slot], -torch.inf).flatten().softmax(-1).reshape(32, 18)
         row, column = divmod(cell_prob.argmax().item(), 18)
         result.update(slot=slot + 1, card=self.vocabulary.cards[ids[slot].item()], row=row + 1, column=column + 1)
@@ -287,7 +299,7 @@ class ActionPredictor:
         return result
 
 
-def main(argv=None):
+def main(argv=None, *, predictor_class=ActionPredictor):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("checkpoint", type=Path)
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -309,7 +321,7 @@ def main(argv=None):
         terrain = (json.loads(args.field_layout.read_text(encoding="utf-8-sig")) if args.field_layout else
                    replay["metadata"]["field_layout"] if replay else None)
         costs = json.loads(args.card_costs.read_text(encoding="utf-8-sig")) if args.card_costs else None
-        predictor = ActionPredictor(args.checkpoint, device=args.device, field_layout=terrain,
+        predictor = predictor_class(args.checkpoint, device=args.device, field_layout=terrain,
                                     card_costs=costs, min_card_confidence=args.min_card_confidence,
                                     play_threshold=args.play_threshold)
         with ExitStack() as stack:

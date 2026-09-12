@@ -48,7 +48,7 @@ from field import FIELD
 MODEL_PATH = DETECTION_ENGINE_PATH
 ELIXIR_MODEL_PATH = ELIXIR_DETECTION_ENGINE_PATH
 CARDS_MODEL_PATH = CLASSIFICATION_CARDS_MODEL_PATH
-INPUT_VIDEO = SCRIPT_DIR / r"screenshots\my_dataset\oyassuu-hog-top-10\oyassuu-hog-top10_00.50.13.872-00.55.07.397-seg13.mp4"
+INPUT_VIDEO = SCRIPT_DIR / r""
 OUTPUT_VIDEO = SCRIPT_DIR / r"screenshots/output_tracked_kalman.mp4"
 
 IMGSZ = 1280
@@ -1506,7 +1506,7 @@ def run_video_prediction(
     input_video=INPUT_VIDEO, output_video=OUTPUT_VIDEO, *,
     process_fps_limit=FPS_PROCESS, display=True, write_video=True,
     observation_callback=None, hp_enabled=TOWER_HP_ENABLED, synchronous_hp=False,
-    write_logs=True, annotation_callback=None,
+    write_logs=True, annotation_callback=None, frame_source=None, key_callback=None,
 ):
     """Run shared perception; the callback receives causal per-frame observations.
 
@@ -1514,6 +1514,9 @@ def run_video_prediction(
     synchronous_hp=True. Importing this module does not open videos or models.
     annotation_callback(output_frame, frame_data) may draw recommendations in
     place after perception, before display/video writing; it never sees raw crops.
+    frame_source may provide isOpened/get/release and iter_frames(target_fps)
+    for a live stream. Its indices must represent elapsed time at source_fps,
+    not merely a count of processed frames. key_callback receives OpenCV keys.
     """
     INPUT_VIDEO = Path(input_video)
     OUTPUT_VIDEO = Path(output_video)
@@ -1537,7 +1540,7 @@ def run_video_prediction(
         model = YOLO(str(MODEL_PATH))
         elixir_model = YOLO(str(ELIXIR_MODEL_PATH))
         classification_cards_model = YOLO(str(CARDS_MODEL_PATH))
-        cap = cv2.VideoCapture(str(INPUT_VIDEO))
+        cap = frame_source if frame_source is not None else cv2.VideoCapture(str(INPUT_VIDEO))
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {INPUT_VIDEO}")
 
@@ -1740,7 +1743,9 @@ def run_video_prediction(
         last_frame_index = -1
         stopped_by_user = False
 
-        for frame_count, frame in iter_processing_frames(cap, fps, process_fps):
+        frames = (cap.iter_frames(process_fps) if frame_source is not None
+                  else iter_processing_frames(cap, fps, process_fps))
+        for frame_count, frame in frames:
             # frame_count remains a source-video index: all ms thresholds use source fps.
             timestamp_ms = frame_count * 1000 / fps
             processed_frames += 1
@@ -2383,9 +2388,13 @@ def run_video_prediction(
 
             if out is not None:
                 out.write(output_frame)
-            if display and cv2.waitKey(1) & 0xFF == ord("q"):
-                stopped_by_user = True
-                break
+            if display:
+                key = cv2.waitKey(1) & 0xFF
+                if key_callback is not None:
+                    key_callback(key)
+                if key == ord("q"):
+                    stopped_by_user = True
+                    break
 
         return {
             "source_fps": fps, "processing_fps": process_fps,

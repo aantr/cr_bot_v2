@@ -26,6 +26,7 @@ class FakePredictor:
 
     def predict(self, **kwargs):
         return {"type": "play", "card": "knight", "slot": 1, "row": 16, "column": 9,
+                "battle_id": "fake-battle",
                 "observation_timestamp_ms": self.history[-1][0]["timestamp_ms"],
                 "history_length": min(3, len(self.history)),
                 "play_probability": .8, "play_threshold": .5, "reason": "model_play",
@@ -42,6 +43,18 @@ class VideoActionTests(unittest.TestCase):
     def feed(self, frame):
         with redirect_stdout(io.StringIO()):
             self.advisor(frame)
+
+    def test_busy_live_executor_updates_history_without_new_recommendations(self):
+        self.predictor.history_mode = "observations_only"
+        with redirect_stdout(io.StringIO()):
+            self.advisor(observation(0))
+            self.advisor(observation(200), predict=False)
+            self.advisor(observation(400), predict=False)
+            self.assertEqual(self.advisor.prediction_count, 1)
+            self.assertEqual(self.predictor.history[-1][0]["timestamp_ms"], 400)
+            self.advisor(observation(600))
+        self.assertEqual(self.advisor.prediction_count, 2)
+        self.assertEqual(self.advisor.last_prediction_ms, 600)
 
     def test_delayed_actual_play_is_backfilled_not_moved_to_current_step(self):
         self.feed(observation(0))

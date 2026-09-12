@@ -43,16 +43,17 @@ class VideoActionAdvisor:
         self.hp_enabled, self.output, self.allowed_cells = hp_enabled, output, allowed_cells
         self.latest = None
         self.last_prediction_ms = None
+        self.last_observation_ms = None
         self.prediction_count = 0
         self.predictor.reset(self.battle_id)
 
-    def __call__(self, frame):
+    def __call__(self, frame, *, predict=True):
         self.collector(frame)
         collector = self.collector
         if not collector.observations:
             return
         timestamp = collector.observations[-1]["timestamp_ms"]
-        if timestamp == self.last_prediction_ms:
+        if timestamp == self.last_observation_ms:
             return  # Evidence is retained until the next policy deadline.
         # Keep the same feature context size as training, plus its predecessor.
         capacity = self.predictor.encoder.sequence_length + 1
@@ -71,6 +72,9 @@ class VideoActionAdvisor:
             self.predictor.observe(collector.observations[-1])
         else:
             self._rebuild_feedback_history(timestamp)
+        self.last_observation_ms = timestamp
+        if not predict:
+            return  # Live action RPC can be busy; still preserve sampled history.
         self.latest = self.predictor.predict(allowed_cells=self.allowed_cells)
         self.latest["frame_number"] = frame["frame_number"]
         self.last_prediction_ms = timestamp

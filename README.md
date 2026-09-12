@@ -1,3 +1,73 @@
+## iPhone bot: live screen and two taps per PLAY
+
+`run_bot_iphone.py` reuses the client from `iphone_screen/windows_iphone_demo_v2.py`,
+the existing Kalman/YOLO/OCR perception and `ObjectGRUPredictor`. It reads actual
+iPhone frames; it does not use a video file or click the Windows preview.
+
+From PowerShell, preview first (no taps):
+
+```powershell
+Set-Location C:\Users\aantr\cr_bot\v2
+.\venv\Scripts\python.exe .\run_bot_iphone.py --mac-ip 10.10.10.1 --checkpoint .\runs\offline_rl\object_gru_second\best_play.pt --device 0 --show-cards
+```
+
+Enable actual taps only after checking the recognized cards/field:
+
+```powershell
+.\venv\Scripts\python.exe .\run_bot_iphone.py --mac-ip 10.10.10.1 --checkpoint .\runs\offline_rl\object_gru_second\best_play.pt --device 0 --show-cards --execute
+```
+
+Replace the Mac IP and checkpoint as needed. The Mac bridge must already be
+running, as for the demo (control port 22004, video port 22005; configurable).
+Screen streaming uses the same `av`, `requests`, `websocket-client`, NumPy/OpenCV
+dependencies as the demo. `--help` does not connect to the phone or load models.
+
+- Each newly issued PLAY selects the predicted slot with one tap, waits for the
+  RPC reply plus `--tap-gap-ms 100`, then taps the centre of its predicted cell.
+  WAIT sends nothing. There is no automatic PLAY deduplication across new states
+  or cooldown: sustained PLAY may result in repeated pairs.
+- One pair at a time, no queued stale actions. While a pair is in progress,
+  perception/history continues at the available cadence, but new predictions
+  are suppressed until the pair finishes. Completed RPCs are NOT proof that
+  the game accepted a card; recommendations are not injected as actual actions.
+- Pixel coordinates use the ORIGINAL stream resolution: slot centres come from
+  `CARDS[(width,height)]` divided into four columns; cell centres come from
+  `BATTLEFIELDS[(width,height)]` divided into 18 columns and 32 rows, both using
+  1-based policy indices. The client maps pixels to logical iOS coordinates.
+  Window resizing does not affect taps. `#` cells are allowed unless masked.
+- Configure the stream's actual resolution in `model_paths.py`, including
+  `ELIXIR_BAR` and HP crops. Unknown resolution/orientation changes stop the bot;
+  no automatic stretching/crop guessing is performed.
+- Q/Esc stops, Space pauses/resumes decisions (history still updates).
+  `--headless` removes windows; use Ctrl+C to stop. A tap already sent cannot be
+  undone. Stopping/pausing between taps may leave the card selected; check it
+  before resuming. `--max-seconds 180` bounds a run if desired.
+- Start with the battlefield visible near the beginning of ONE battle and stop
+  before menus/the next battle. Automatic battle/menu/end detection is NOT
+  implemented. Pausing does not reset the battle clock/history; restart for a
+  new battle. The bot has no menu-navigation or purchase workflow.
+- Video timeout stops the bot. `--max-frame-age-ms 1000` checks age since local
+  frame arrival; `--max-action-age-ms 1500` skips predictions made from frames
+  that became too old during recognition. Hidden encoder/network latency cannot
+  be measured by this client. Live timers use elapsed time, not processed-frame
+  count; under overload the bot skips camera frames instead of accumulating lag.
+- Tap RPCs do not use the demo client's automatic retries: a lost reply could
+  otherwise repeat a tap that already happened. An uncertain/failed tap stops
+  execution, and a failed card tap is never followed by a placement tap.
+- `--card-costs costs.json` (card name -> cost) enables affordability checks;
+  without it the model sees elixir, but the executor does NOT enforce costs.
+  `--allowed-cells cells.json` enables boolean `[32,18]` or `[4,32,18] placement
+  masks. Game legality is not inferred automatically from card names.
+- `--play-threshold 0.5`, `--state-fps 5`, `--detection-fps 30` match the video
+  example defaults. Keep HP OCR enabled if training used it. `--predictions`
+  writes recommendations to a NEW JSONL file, not confirmed game actions.
+
+Fake-client tests (never contact the phone):
+
+```powershell
+.\venv\Scripts\python.exe -m unittest discover -s tests -p "test_run_bot_iphone.py" -v
+```
+
 ## Object Transformer + GRU policy
 
 An alternative behavior-cloning policy now lives in `offline_rl/object_gru/`:
